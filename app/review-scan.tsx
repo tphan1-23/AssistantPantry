@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
 import { Text, View } from '@/components/Themed';
@@ -80,7 +80,7 @@ export default function ReviewScanScreen() {
           });
         }
       }
-      router.replace('/');
+      router.dismissTo('/index');
     } catch (error) {
       Alert.alert('Could not save items', error instanceof Error ? error.message : 'Unknown error');
     } finally {
@@ -94,7 +94,6 @@ export default function ReviewScanScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Review Scan' }} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.heading}>Review scanned items</Text>
         <Text style={styles.subheading}>Check names, quantities, and dates before adding.</Text>

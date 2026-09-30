@@ -1,14 +1,11 @@
 import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, Tabs, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { SQLiteProvider } from 'expo-sqlite';
-import { SymbolView } from 'expo-symbols';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
 import { migrateDatabase } from '@/services/database';
 
 export {
@@ -48,51 +45,13 @@ function RootLayoutNav() {
   return (
     <SQLiteProvider databaseName="pantry_v2.db" onInit={migrateDatabase}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Tabs
-          screenOptions={{
-            tabBarActiveTintColor: Colors[colorScheme].tint,
-            headerShown: useClientOnlyValue(false, true),
-          }}>
-          <Tabs.Screen
-            name="index"
-            options={{
-              title: 'Pantry',
-              tabBarIcon: ({ color }) => (
-                <SymbolView
-                  name={{ ios: 'refrigerator', android: 'kitchen', web: 'kitchen' }}
-                  tintColor={color}
-                  size={28}
-                />
-              ),
-            }}
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="review-scan"
+            options={{ presentation: 'modal', title: 'Review Scan' }}
           />
-          <Tabs.Screen
-            name="scan"
-            options={{
-              title: 'Scan',
-              tabBarIcon: ({ color }) => (
-                <SymbolView
-                  name={{ ios: 'camera', android: 'photo_camera', web: 'photo_camera' }}
-                  tintColor={color}
-                  size={28}
-                />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="recipes"
-            options={{
-              title: 'Recipes',
-              tabBarIcon: ({ color }) => (
-                <SymbolView
-                  name={{ ios: 'fork.knife', android: 'restaurant', web: 'restaurant' }}
-                  tintColor={color}
-                  size={28}
-                />
-              ),
-            }}
-          />
-        </Tabs>
+        </Stack>
       </ThemeProvider>
     </SQLiteProvider>
   );
