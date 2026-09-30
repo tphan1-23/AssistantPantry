@@ -15,6 +15,10 @@ export interface Recipe {
   instructions: string[];
 }
 
+export interface FavoriteRecipe extends Recipe {
+  id: number;
+}
+
 export type ScanConfidence = 'high' | 'low';
 
 export interface ScannedItem {

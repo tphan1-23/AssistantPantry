@@ -1,12 +1,27 @@
-import { StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
 import type { Recipe } from '@/types/pantry';
 
-export default function RecipeCard({ recipe }: { recipe: Recipe }) {
+type Props = {
+  recipe: Recipe;
+  isFavorited?: boolean;
+  onToggleFavorite?: () => void;
+};
+
+export default function RecipeCard({ recipe, isFavorited, onToggleFavorite }: Props) {
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>{recipe.title}</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>{recipe.title}</Text>
+        {onToggleFavorite && (
+          <Pressable onPress={onToggleFavorite} hitSlop={10} style={styles.heartButton}>
+            <Text style={[styles.heart, isFavorited && styles.heartActive]}>
+              {isFavorited ? '♥' : '♡'}
+            </Text>
+          </Pressable>
+        )}
+      </View>
 
       <Text style={styles.sectionLabel}>Uses expiring ingredients</Text>
       <Text style={styles.ingredients}>{recipe.urgentIngredientsUsed.join(', ')}</Text>
@@ -36,10 +51,27 @@ const styles = StyleSheet.create({
     borderColor: '#8888',
     marginBottom: 12,
   },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   title: {
+    flex: 1,
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 8,
+  },
+  heartButton: {
+    paddingLeft: 10,
+  },
+  heart: {
+    fontSize: 24,
+    opacity: 0.5,
+  },
+  heartActive: {
+    opacity: 1,
+    color: '#d6336c',
   },
   sectionLabel: {
     fontSize: 12,

@@ -1,44 +1,64 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import { Text, View } from '@/components/Themed';
+import FavoriteBubbles from '@/components/FavoriteBubbles';
 import RecipeCard from '@/components/RecipeCard';
+import { Text, View } from '@/components/Themed';
 import { BRAND_COLOR } from '@/constants/Colors';
-import { findMatchingItem, getAllItems, getExpiringItems } from '@/services/database';
+import {
+  addFavoriteRecipe,
+  getAllItems,
+  getExpiringItems,
+  getFavoriteRecipes,
+  removeFavoriteRecipe,
+} from '@/services/database';
 import { generateZeroWasteRecipes } from '@/services/gemini';
-import type { PantryItem, Recipe } from '@/types/pantry';
+import type { FavoriteRecipe, PantryItem, Recipe } from '@/types/pantry';
 
 export default function RecipesScreen() {
   const db = useSQLiteContext();
   const [expiringItems, setExpiringItems] = useState<PantryItem[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [favorites, setFavorites] = useState<FavoriteRecipe[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // The exact pantry item ids the current `recipes` were generated from.
+  // Checking against these (rather than re-parsing Gemini's own possibly
+  // reworded ingredient text) is what lets us tell precisely whether one of
+  // them was actually removed, without false positives from paraphrasing.
+  // A ref because it's pure bookkeeping for the focus-effect check below,
+  // not something the UI renders.
+  const recipeBasisIdsRef = useRef<number[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
 
-      Promise.all([getAllItems(db), getExpiringItems(db, 72)]).then(([allItems, expiring]) => {
-        if (cancelled) return;
-        setExpiringItems(expiring);
+      Promise.all([getAllItems(db), getExpiringItems(db, 72), getFavoriteRecipes(db)]).then(
+        ([allItems, expiring, favoriteRecipes]) => {
+          if (cancelled) return;
+          setExpiringItems(expiring);
+          setFavorites(favoriteRecipes);
 
-        // Drop any displayed recipes that no longer reflect the current
-        // pantry: nothing left at all, nothing urgent left, or one of the
-        // ingredients a recipe actually used has since been removed.
-        setRecipes((prevRecipes) => {
-          if (prevRecipes.length === 0) return prevRecipes;
-          if (allItems.length === 0 || expiring.length === 0) return [];
+          setRecipes((prevRecipes) => {
+            if (prevRecipes.length === 0) return prevRecipes;
 
-          const stillValid = prevRecipes.every((recipe) =>
-            recipe.urgentIngredientsUsed.every(
-              (ingredient) => findMatchingItem(allItems, ingredient) !== null
-            )
-          );
-          return stillValid ? prevRecipes : [];
-        });
-      });
+            const allIds = new Set(allItems.map((item) => item.id));
+            const stillValid =
+              allItems.length > 0 &&
+              expiring.length > 0 &&
+              recipeBasisIdsRef.current.every((id) => allIds.has(id));
+
+            if (!stillValid) {
+              recipeBasisIdsRef.current = [];
+              return [];
+            }
+            return prevRecipes;
+          });
+        }
+      );
 
       return () => {
         cancelled = true;
@@ -61,11 +81,27 @@ export default function RecipesScreen() {
       const names = freshExpiring.map((item) => item.name);
       const result = await generateZeroWasteRecipes(names);
       setRecipes(result);
+      recipeBasisIdsRef.current = freshExpiring.map((item) => item.id);
     } catch (error) {
       Alert.alert('Could not generate recipes', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }
+  }
+
+  async function handleToggleFavorite(recipe: Recipe) {
+    const existing = favorites.find((f) => f.title === recipe.title);
+    if (existing) {
+      await removeFavoriteRecipe(db, existing.id);
+    } else {
+      await addFavoriteRecipe(db, recipe);
+    }
+    setFavorites(await getFavoriteRecipes(db));
+  }
+
+  async function handleUnfavorite(id: number) {
+    await removeFavoriteRecipe(db, id);
+    setFavorites(await getFavoriteRecipes(db));
   }
 
   return (
@@ -92,8 +128,16 @@ export default function RecipesScreen() {
         ListEmptyComponent={
           !isLoading ? <Text style={styles.empty}>No recipes generated yet.</Text> : null
         }
-        renderItem={({ item }) => <RecipeCard recipe={item} />}
+        renderItem={({ item }) => (
+          <RecipeCard
+            recipe={item}
+            isFavorited={favorites.some((f) => f.title === item.title)}
+            onToggleFavorite={() => handleToggleFavorite(item)}
+          />
+        )}
       />
+
+      <FavoriteBubbles favorites={favorites} onUnfavorite={handleUnfavorite} />
     </View>
   );
 }

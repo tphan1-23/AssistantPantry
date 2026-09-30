@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-import type { PantryItem, ScannedItem } from '@/types/pantry';
+import type { FavoriteRecipe, PantryItem, Recipe, ScannedItem } from '@/types/pantry';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -14,6 +14,14 @@ export async function migrateDatabase(db: SQLiteDatabase) {
       dateAddedTimestamp INTEGER NOT NULL,
       expiryTimestamp INTEGER NOT NULL,
       isConsumed INTEGER DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS favorite_recipes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      urgentIngredientsUsed TEXT NOT NULL,
+      additionalIngredients TEXT NOT NULL,
+      instructions TEXT NOT NULL,
+      createdAt INTEGER NOT NULL
     );
   `);
 }
@@ -149,4 +157,48 @@ export function findMatchingItem(items: PantryItem[], name: string): PantryItem 
       return itemWords.every((w) => scannedWords.has(w)) || [...scannedWords].every((w) => itemWords.includes(w));
     }) ?? null
   );
+}
+
+type FavoriteRecipeRow = {
+  id: number;
+  title: string;
+  urgentIngredientsUsed: string;
+  additionalIngredients: string;
+  instructions: string;
+  createdAt: number;
+};
+
+function rowToFavoriteRecipe(row: FavoriteRecipeRow): FavoriteRecipe {
+  return {
+    id: row.id,
+    title: row.title,
+    urgentIngredientsUsed: JSON.parse(row.urgentIngredientsUsed),
+    additionalIngredients: JSON.parse(row.additionalIngredients),
+    instructions: JSON.parse(row.instructions),
+  };
+}
+
+export async function getFavoriteRecipes(db: SQLiteDatabase): Promise<FavoriteRecipe[]> {
+  const rows = await db.getAllAsync<FavoriteRecipeRow>(
+    'SELECT * FROM favorite_recipes ORDER BY createdAt DESC'
+  );
+  return rows.map(rowToFavoriteRecipe);
+}
+
+export async function addFavoriteRecipe(db: SQLiteDatabase, recipe: Recipe): Promise<number> {
+  const result = await db.runAsync(
+    'INSERT INTO favorite_recipes (title, urgentIngredientsUsed, additionalIngredients, instructions, createdAt) VALUES (?, ?, ?, ?, ?)',
+    [
+      recipe.title,
+      JSON.stringify(recipe.urgentIngredientsUsed),
+      JSON.stringify(recipe.additionalIngredients),
+      JSON.stringify(recipe.instructions),
+      Date.now(),
+    ]
+  );
+  return result.lastInsertRowId;
+}
+
+export async function removeFavoriteRecipe(db: SQLiteDatabase, id: number) {
+  await db.runAsync('DELETE FROM favorite_recipes WHERE id = ?', [id]);
 }
