@@ -63,6 +63,10 @@ export default function ReviewScanScreen() {
     setDrafts((prev) => prev?.map((d) => (d.key === key ? { ...d, ...patch } : d)) ?? prev);
   }
 
+  function removeDraft(key: string) {
+    setDrafts((prev) => prev?.filter((d) => d.key !== key) ?? prev);
+  }
+
   async function handleAddAll() {
     if (!drafts) return;
     setIsSaving(true);
@@ -98,9 +102,21 @@ export default function ReviewScanScreen() {
         <Text style={styles.heading}>Review scanned items</Text>
         <Text style={styles.subheading}>Check names, quantities, and dates before adding.</Text>
 
+        {drafts.length === 0 && (
+          <Text style={styles.empty}>No items left to add. Go back to scan again if needed.</Text>
+        )}
+
         {drafts.map((draft) => (
           <View key={draft.key} style={styles.card}>
-            <Text style={styles.fieldLabel}>Name</Text>
+            <View style={styles.cardHeader}>
+              <Text style={styles.fieldLabel}>Name</Text>
+              <Pressable
+                onPress={() => removeDraft(draft.key)}
+                style={styles.removeButton}
+                hitSlop={8}>
+                <Text style={styles.removeButtonText}>Remove</Text>
+              </Pressable>
+            </View>
             <TextInput
               style={styles.input}
               value={draft.name}
@@ -177,8 +193,17 @@ export default function ReviewScanScreen() {
         ))}
       </ScrollView>
 
-      <Pressable style={styles.addButton} onPress={handleAddAll} disabled={isSaving}>
-        <Text style={styles.addButtonText}>{isSaving ? 'Saving...' : 'Add to Pantry'}</Text>
+      <Pressable
+        style={[styles.addButton, drafts.length === 0 && styles.addButtonDisabled]}
+        onPress={handleAddAll}
+        disabled={isSaving || drafts.length === 0}>
+        <Text style={styles.addButtonText}>
+          {isSaving
+            ? 'Saving...'
+            : drafts.length === 0
+              ? 'Nothing to Add'
+              : `Add ${drafts.length} to Pantry`}
+        </Text>
       </Pressable>
     </View>
   );
@@ -213,6 +238,25 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#8888',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  removeButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  removeButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#c0392b',
+  },
+  empty: {
+    textAlign: 'center',
+    opacity: 0.6,
+    marginTop: 12,
   },
   fieldLabel: {
     fontSize: 12,
@@ -279,6 +323,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     backgroundColor: BRAND_COLOR,
+  },
+  addButtonDisabled: {
+    opacity: 0.5,
   },
   addButtonText: {
     color: 'white',
