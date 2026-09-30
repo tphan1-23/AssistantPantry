@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { Animated, Pressable, StyleSheet } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
 import type { Recipe } from '@/types/pantry';
@@ -10,15 +11,64 @@ type Props = {
 };
 
 export default function RecipeCard({ recipe, isFavorited, onToggleFavorite }: Props) {
+  // useState (not useRef) so the lazily-created Animated.Value instance is
+  // safe to read during render; we still only ever mutate it imperatively.
+  const [scale] = useState(() => new Animated.Value(1));
+  const [rotate] = useState(() => new Animated.Value(0));
+  const [opacity] = useState(() => new Animated.Value(1));
+  const [isBreaking, setIsBreaking] = useState(false);
+
+  function handleHeartPress() {
+    if (!onToggleFavorite) return;
+
+    if (!isFavorited) {
+      onToggleFavorite();
+      return;
+    }
+
+    // Unfavoriting: play a little "heart breaking away" animation (a shake,
+    // then a pop-and-fade) before actually removing it.
+    setIsBreaking(true);
+    Animated.sequence([
+      Animated.timing(rotate, { toValue: 1, duration: 90, useNativeDriver: true }),
+      Animated.timing(rotate, { toValue: -1, duration: 90, useNativeDriver: true }),
+      Animated.timing(rotate, { toValue: 0, duration: 60, useNativeDriver: true }),
+      Animated.parallel([
+        Animated.timing(scale, { toValue: 1.7, duration: 220, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0, duration: 220, useNativeDriver: true }),
+      ]),
+    ]).start(() => {
+      onToggleFavorite();
+      scale.setValue(1);
+      rotate.setValue(0);
+      opacity.setValue(1);
+      setIsBreaking(false);
+    });
+  }
+
+  const rotateInterpolate = rotate.interpolate({
+    inputRange: [-1, 1],
+    outputRange: ['-25deg', '25deg'],
+  });
+
   return (
     <View style={styles.card}>
       <View style={styles.titleRow}>
         <Text style={styles.title}>{recipe.title}</Text>
         {onToggleFavorite && (
-          <Pressable onPress={onToggleFavorite} hitSlop={10} style={styles.heartButton}>
-            <Text style={[styles.heart, isFavorited && styles.heartActive]}>
+          <Pressable
+            onPress={handleHeartPress}
+            hitSlop={10}
+            disabled={isBreaking}
+            style={styles.heartButton}>
+            <Animated.Text
+              style={[
+                styles.heart,
+                isFavorited && styles.heartActive,
+                { transform: [{ scale }, { rotate: rotateInterpolate }], opacity },
+              ]}>
               {isFavorited ? '♥' : '♡'}
-            </Text>
+            </Animated.Text>
           </Pressable>
         )}
       </View>

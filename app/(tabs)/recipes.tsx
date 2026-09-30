@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet } from 'react
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import FavoriteBubbles from '@/components/FavoriteBubbles';
+import FavoritesPanel from '@/components/FavoritesPanel';
 import RecipeCard from '@/components/RecipeCard';
 import { Text, View } from '@/components/Themed';
 import { BRAND_COLOR } from '@/constants/Colors';
@@ -137,7 +137,7 @@ export default function RecipesScreen() {
         )}
       />
 
-      <FavoriteBubbles favorites={favorites} onUnfavorite={handleUnfavorite} />
+      <FavoritesPanel favorites={favorites} onUnfavorite={handleUnfavorite} />
     </View>
   );
 }
