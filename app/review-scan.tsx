@@ -36,7 +36,7 @@ export default function ReviewScanScreen() {
   useEffect(() => {
     const scanned = takePendingScan();
     if (!scanned || scanned.length === 0) {
-      router.replace('/scan');
+      router.back();
       return;
     }
 
@@ -80,7 +80,7 @@ export default function ReviewScanScreen() {
           });
         }
       }
-      router.dismissTo('/index');
+      Alert.alert('Added to pantry', undefined, [{ text: 'OK', onPress: () => router.back() }]);
     } catch (error) {
       Alert.alert('Could not save items', error instanceof Error ? error.message : 'Unknown error');
     } finally {

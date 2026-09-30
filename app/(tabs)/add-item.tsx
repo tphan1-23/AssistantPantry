@@ -39,7 +39,7 @@ export default function AddItemScreen() {
       setQuantityText('1');
       setUnit('item');
       setExpiryDate(new Date(Date.now() + 7 * DAY_MS));
-      router.navigate('/index');
+      router.navigate('/');
     } catch (error) {
       Alert.alert('Could not save', error instanceof Error ? error.message : 'Unknown error');
     } finally {

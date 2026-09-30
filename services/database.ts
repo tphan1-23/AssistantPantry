@@ -113,11 +113,19 @@ export async function deletePantryItem(db: SQLiteDatabase, id: number) {
 
 function normalizeName(name: string): string {
   return name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // strip accents (e.g. "Bò" -> "Bo") before comparing
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, '')
-    .replace(/\s+/g, ' ');
+    .replace(/\s+/g, ' ')
+    .trim();
 }
+
+// Below this length, raw substring/word matching is too easy to trigger by
+// coincidence (e.g. "Bo" matching inside "Bottled Water"), so such short
+// names are only ever matched exactly, never fuzzily.
+const MIN_FUZZY_MATCH_LENGTH = 3;
 
 /** Heuristic match for "is this the same product already in the pantry?" */
 export function findMatchingItem(items: PantryItem[], name: string): PantryItem | null {
@@ -127,10 +135,18 @@ export function findMatchingItem(items: PantryItem[], name: string): PantryItem 
   const exact = items.find((item) => normalizeName(item.name) === normalized);
   if (exact) return exact;
 
+  if (normalized.length < MIN_FUZZY_MATCH_LENGTH) return null;
+  const scannedWords = new Set(normalized.split(' ').filter(Boolean));
+
   return (
     items.find((item) => {
       const itemNormalized = normalizeName(item.name);
-      return itemNormalized.includes(normalized) || normalized.includes(itemNormalized);
+      if (itemNormalized.length < MIN_FUZZY_MATCH_LENGTH) return false;
+
+      const itemWords = itemNormalized.split(' ').filter(Boolean);
+      // Whole-word containment only (never a raw substring match), so a
+      // short word can't accidentally match inside an unrelated longer one.
+      return itemWords.every((w) => scannedWords.has(w)) || [...scannedWords].every((w) => itemWords.includes(w));
     }) ?? null
   );
 }
