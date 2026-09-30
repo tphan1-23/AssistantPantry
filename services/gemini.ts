@@ -2,7 +2,7 @@ import { GoogleGenAI, createPartFromBase64, createUserContent } from '@google/ge
 
 import type { Recipe, ScannedItem } from '@/types/pantry';
 
-const MODEL = 'gemini-flash-latest';
+const MODEL = process.env.EXPO_PUBLIC_GEMINI_MODEL || 'gemini-flash-latest';
 
 let client: GoogleGenAI | null = null;
 
