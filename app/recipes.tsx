@@ -5,6 +5,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 
 import { Text, View } from '@/components/Themed';
 import RecipeCard from '@/components/RecipeCard';
+import { BRAND_COLOR } from '@/constants/Colors';
 import { getExpiringItems } from '@/services/database';
 import { generateZeroWasteRecipes } from '@/services/gemini';
 import type { PantryItem, Recipe } from '@/types/pantry';
@@ -81,7 +82,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   button: {
-    backgroundColor: '#2f9e44',
+    backgroundColor: BRAND_COLOR,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',

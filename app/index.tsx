@@ -5,6 +5,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 
 import { Text, View } from '@/components/Themed';
 import PantryItemCard from '@/components/PantryItemCard';
+import { BRAND_COLOR, BRAND_COLOR_MUTED } from '@/constants/Colors';
 import { deletePantryItem, getAllItems, markConsumed } from '@/services/database';
 import type { PantryItem } from '@/types/pantry';
 
@@ -28,6 +29,10 @@ export default function InventoryScreen() {
     refresh();
   }
 
+  function handleEdit(id: number) {
+    router.push({ pathname: '/item-form', params: { id: String(id) } });
+  }
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -36,16 +41,27 @@ export default function InventoryScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <Text style={styles.empty}>
-            Your pantry is empty. Tap Scan to add items from a receipt or fridge photo.
+            Your pantry is empty. Scan a receipt/fridge photo or add an item manually to get
+            started.
           </Text>
         }
         renderItem={({ item }) => (
-          <PantryItemCard item={item} onConsume={handleConsume} onDelete={handleDelete} />
+          <PantryItemCard
+            item={item}
+            onPress={handleEdit}
+            onConsume={handleConsume}
+            onDelete={handleDelete}
+          />
         )}
       />
-      <Pressable style={styles.scanButton} onPress={() => router.push('/scan')}>
-        <Text style={styles.scanButtonText}>+ Scan</Text>
-      </Pressable>
+      <View style={styles.fabRow}>
+        <Pressable style={styles.addButton} onPress={() => router.push('/item-form')}>
+          <Text style={styles.addButtonText}>+ Add Manually</Text>
+        </Pressable>
+        <Pressable style={styles.scanButton} onPress={() => router.push('/scan')}>
+          <Text style={styles.scanButtonText}>+ Scan</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -56,6 +72,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
+    paddingBottom: 100,
     flexGrow: 1,
   },
   empty: {
@@ -63,11 +80,15 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     marginTop: 40,
   },
-  scanButton: {
+  fabRow: {
     position: 'absolute',
     right: 20,
     bottom: 24,
-    backgroundColor: '#2f9e44',
+    gap: 10,
+    alignItems: 'flex-end',
+  },
+  scanButton: {
+    backgroundColor: BRAND_COLOR,
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderRadius: 30,
@@ -75,5 +96,16 @@ const styles = StyleSheet.create({
   scanButtonText: {
     color: 'white',
     fontWeight: '700',
+  },
+  addButton: {
+    backgroundColor: BRAND_COLOR_MUTED,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
+  },
+  addButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 13,
   },
 });

@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useColorScheme } from '@/components/useColorScheme';
+import Colors from '@/constants/Colors';
 import { migrateDatabase } from '@/services/database';
 
 export {
@@ -45,11 +46,11 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <SQLiteProvider databaseName="pantry.db" onInit={migrateDatabase}>
+    <SQLiteProvider databaseName="pantry_v2.db" onInit={migrateDatabase}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Tabs
           screenOptions={{
-            tabBarActiveTintColor: '#2f9e44',
+            tabBarActiveTintColor: Colors[colorScheme].tint,
             headerShown: useClientOnlyValue(false, true),
           }}>
           <Tabs.Screen

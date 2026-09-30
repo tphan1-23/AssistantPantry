@@ -9,11 +9,12 @@ const URGENT_WITHIN_MS = 72 * 60 * 60 * 1000;
 
 type Props = {
   item: PantryItem;
+  onPress: (id: number) => void;
   onConsume: (id: number) => void;
   onDelete: (id: number) => void;
 };
 
-export default function PantryItemCard({ item, onConsume, onDelete }: Props) {
+export default function PantryItemCard({ item, onPress, onConsume, onDelete }: Props) {
   // Lazy initializer: the one sanctioned place to read an impure value like
   // Date.now() during render, so the purity lint rule doesn't flag it.
   const [now] = useState(() => Date.now());
@@ -30,11 +31,13 @@ export default function PantryItemCard({ item, onConsume, onDelete }: Props) {
 
   return (
     <View style={styles.card}>
-      <View style={styles.info}>
+      <Pressable style={styles.info} onPress={() => onPress(item.id)}>
         <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.quantity}>{item.quantity}</Text>
+        <Text style={styles.quantity}>
+          {item.quantity} {item.unit}
+        </Text>
         <Text style={[styles.status, isUrgent && styles.statusUrgent]}>{statusLabel}</Text>
-      </View>
+      </Pressable>
       <View style={styles.actions}>
         <Pressable onPress={() => onConsume(item.id)} style={styles.actionButton}>
           <Text style={styles.actionText}>Used</Text>

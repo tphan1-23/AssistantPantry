@@ -1,47 +1,30 @@
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, StyleSheet } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { useSQLiteContext } from 'expo-sqlite';
 import { router } from 'expo-router';
 
 import { Text, View } from '@/components/Themed';
-import { insertScannedItems } from '@/services/database';
+import { BRAND_COLOR } from '@/constants/Colors';
 import { scanImageForItems } from '@/services/gemini';
+import { setPendingScan } from '@/services/scanSession';
+
+type CapturedPhoto = { uri: string; base64: string };
 
 export default function ScanScreen() {
-  const db = useSQLiteContext();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
+  const [photo, setPhoto] = useState<CapturedPhoto | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  async function processImage(base64: string) {
-    setIsProcessing(true);
-    try {
-      const items = await scanImageForItems(base64);
-      if (items.length === 0) {
-        Alert.alert('No items found', 'Gemini could not identify any food items in that image.');
-        return;
-      }
-      await insertScannedItems(db, items);
-      Alert.alert('Added to pantry', `Added ${items.length} item(s).`, [
-        { text: 'OK', onPress: () => router.push('/') },
-      ]);
-    } catch (error) {
-      Alert.alert('Scan failed', error instanceof Error ? error.message : 'Unknown error');
-    } finally {
-      setIsProcessing(false);
-    }
-  }
 
   async function handleCapture() {
     if (!cameraRef.current) return;
-    const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.5 });
-    if (!photo?.base64) {
+    const result = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.5 });
+    if (!result?.base64) {
       Alert.alert('Capture failed', 'Could not read image data from the camera.');
       return;
     }
-    await processImage(photo.base64);
+    setPhoto({ uri: result.uri, base64: result.base64 });
   }
 
   async function handlePickFromGallery() {
@@ -51,7 +34,53 @@ export default function ScanScreen() {
       mediaTypes: ['images'],
     });
     if (result.canceled || !result.assets[0]?.base64) return;
-    await processImage(result.assets[0].base64);
+    setPhoto({ uri: result.assets[0].uri, base64: result.assets[0].base64 });
+  }
+
+  async function handleUsePhoto() {
+    if (!photo) return;
+    setIsProcessing(true);
+    try {
+      const items = await scanImageForItems(photo.base64);
+      if (items.length === 0) {
+        Alert.alert('No items found', 'Gemini could not identify any food items in that image.');
+        setPhoto(null);
+        return;
+      }
+      setPendingScan(items);
+      router.push('/review-scan');
+      setPhoto(null);
+    } catch (error) {
+      Alert.alert('Scan failed', error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  function handleRetake() {
+    setPhoto(null);
+  }
+
+  if (photo) {
+    return (
+      <View style={styles.container}>
+        <Image source={{ uri: photo.uri }} style={styles.camera} resizeMode="cover" />
+        <View style={styles.controls}>
+          {isProcessing ? (
+            <ActivityIndicator size="large" />
+          ) : (
+            <>
+              <Pressable style={styles.button} onPress={handleUsePhoto}>
+                <Text style={styles.buttonText}>Use This Photo</Text>
+              </Pressable>
+              <Pressable style={styles.secondaryButton} onPress={handleRetake}>
+                <Text style={styles.buttonText}>Retake</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+      </View>
+    );
   }
 
   if (!permission) {
@@ -76,18 +105,12 @@ export default function ScanScreen() {
     <View style={styles.container}>
       <CameraView ref={cameraRef} style={styles.camera} facing="back" />
       <View style={styles.controls}>
-        {isProcessing ? (
-          <ActivityIndicator size="large" />
-        ) : (
-          <>
-            <Pressable style={styles.button} onPress={handleCapture}>
-              <Text style={styles.buttonText}>Capture</Text>
-            </Pressable>
-            <Pressable style={styles.secondaryButton} onPress={handlePickFromGallery}>
-              <Text style={styles.buttonText}>Pick from Gallery</Text>
-            </Pressable>
-          </>
-        )}
+        <Pressable style={styles.button} onPress={handleCapture}>
+          <Text style={styles.buttonText}>Capture</Text>
+        </Pressable>
+        <Pressable style={styles.secondaryButton} onPress={handlePickFromGallery}>
+          <Text style={styles.buttonText}>Pick from Gallery</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -117,7 +140,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   button: {
-    backgroundColor: '#2f9e44',
+    backgroundColor: BRAND_COLOR,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
