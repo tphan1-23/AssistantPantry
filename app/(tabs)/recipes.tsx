@@ -6,7 +6,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { Text, View } from '@/components/Themed';
 import RecipeCard from '@/components/RecipeCard';
 import { BRAND_COLOR } from '@/constants/Colors';
-import { getExpiringItems } from '@/services/database';
+import { findMatchingItem, getAllItems, getExpiringItems } from '@/services/database';
 import { generateZeroWasteRecipes } from '@/services/gemini';
 import type { PantryItem, Recipe } from '@/types/pantry';
 
@@ -18,18 +18,47 @@ export default function RecipesScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      getExpiringItems(db, 72).then(setExpiringItems);
+      let cancelled = false;
+
+      Promise.all([getAllItems(db), getExpiringItems(db, 72)]).then(([allItems, expiring]) => {
+        if (cancelled) return;
+        setExpiringItems(expiring);
+
+        // Drop any displayed recipes that no longer reflect the current
+        // pantry: nothing left at all, nothing urgent left, or one of the
+        // ingredients a recipe actually used has since been removed.
+        setRecipes((prevRecipes) => {
+          if (prevRecipes.length === 0) return prevRecipes;
+          if (allItems.length === 0 || expiring.length === 0) return [];
+
+          const stillValid = prevRecipes.every((recipe) =>
+            recipe.urgentIngredientsUsed.every(
+              (ingredient) => findMatchingItem(allItems, ingredient) !== null
+            )
+          );
+          return stillValid ? prevRecipes : [];
+        });
+      });
+
+      return () => {
+        cancelled = true;
+      };
     }, [db])
   );
 
   async function handleGenerate() {
-    if (expiringItems.length === 0) {
+    // Re-read the pantry right before calling Gemini so generation always
+    // reflects the current state, not a possibly-stale focus-effect snapshot.
+    const freshExpiring = await getExpiringItems(db, 72);
+    setExpiringItems(freshExpiring);
+
+    if (freshExpiring.length === 0) {
       Alert.alert('Nothing expiring soon', 'No items are within 72 hours of their estimated expiry.');
       return;
     }
     setIsLoading(true);
     try {
-      const names = expiringItems.map((item) => item.name);
+      const names = freshExpiring.map((item) => item.name);
       const result = await generateZeroWasteRecipes(names);
       setRecipes(result);
     } catch (error) {

@@ -1,28 +1,36 @@
-import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
-import { router } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
+import { router } from "expo-router";
+import { useSQLiteContext } from "expo-sqlite";
+import { useState } from "react";
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+} from "react-native";
 
-import { Text, View } from '@/components/Themed';
-import DateField from '@/components/DateField';
-import { BRAND_COLOR } from '@/constants/Colors';
-import { insertItem } from '@/services/database';
+import DateField from "@/components/DateField";
+import { Text, View } from "@/components/Themed";
+import { BRAND_COLOR } from "@/constants/Colors";
+import { insertItem } from "@/services/database";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export default function AddItemScreen() {
   const db = useSQLiteContext();
 
-  const [name, setName] = useState('');
-  const [quantityText, setQuantityText] = useState('1');
-  const [unit, setUnit] = useState('item');
-  const [expiryDate, setExpiryDate] = useState(() => new Date(Date.now() + 7 * DAY_MS));
+  const [name, setName] = useState("");
+  const [quantityText, setQuantityText] = useState("1");
+  const [unit, setUnit] = useState("item");
+  const [expiryDate, setExpiryDate] = useState(
+    () => new Date(Date.now() + 7 * DAY_MS),
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   async function handleSave() {
     const trimmedName = name.trim();
     if (!trimmedName) {
-      Alert.alert('Name required', 'Give this item a name before saving.');
+      Alert.alert("Name required", "Give this item a name before saving.");
       return;
     }
     const quantity = Math.max(1, parseInt(quantityText, 10) || 1);
@@ -32,16 +40,19 @@ export default function AddItemScreen() {
       await insertItem(db, {
         name: trimmedName,
         quantity,
-        unit: unit.trim() || 'item',
+        unit: unit.trim() || "item",
         expiryTimestamp: expiryDate.getTime(),
       });
-      setName('');
-      setQuantityText('1');
-      setUnit('item');
+      setName("");
+      setQuantityText("1");
+      setUnit("item");
       setExpiryDate(new Date(Date.now() + 7 * DAY_MS));
-      router.navigate('/');
+      router.navigate("/");
     } catch (error) {
-      Alert.alert('Could not save', error instanceof Error ? error.message : 'Unknown error');
+      Alert.alert(
+        "Could not save",
+        error instanceof Error ? error.message : "Unknown error",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -55,7 +66,7 @@ export default function AddItemScreen() {
           style={styles.input}
           value={name}
           onChangeText={setName}
-          placeholder="e.g. Ricola Cough Drops"
+          placeholder="e.g. Leftover Pizza..."
         />
 
         <View style={styles.row}>
@@ -70,14 +81,29 @@ export default function AddItemScreen() {
           </View>
           <View style={styles.flex1}>
             <Text style={styles.fieldLabel}>Unit</Text>
-            <TextInput style={styles.input} value={unit} onChangeText={setUnit} placeholder="item" />
+            <TextInput
+              style={styles.input}
+              value={unit}
+              onChangeText={setUnit}
+              placeholder="item"
+            />
           </View>
         </View>
 
-        <DateField label="Expiry date" value={expiryDate} onChange={setExpiryDate} />
+        <DateField
+          label="Expiry date"
+          value={expiryDate}
+          onChange={setExpiryDate}
+        />
 
-        <Pressable style={styles.saveButton} onPress={handleSave} disabled={isSaving}>
-          <Text style={styles.saveButtonText}>{isSaving ? 'Saving...' : 'Add to Pantry'}</Text>
+        <Pressable
+          style={styles.saveButton}
+          onPress={handleSave}
+          disabled={isSaving}
+        >
+          <Text style={styles.saveButtonText}>
+            {isSaving ? "Saving..." : "Add to Pantry"}
+          </Text>
         </Pressable>
       </ScrollView>
     </View>
@@ -94,20 +120,20 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    fontWeight: "600",
+    textTransform: "uppercase",
     opacity: 0.6,
   },
   input: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8888',
+    borderColor: "#8888",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
   },
   flex1: {
@@ -118,12 +144,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingVertical: 14,
     borderRadius: 10,
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: BRAND_COLOR,
   },
   saveButtonText: {
-    color: 'white',
-    fontWeight: '700',
+    color: "white",
+    fontWeight: "700",
     fontSize: 16,
   },
 });
