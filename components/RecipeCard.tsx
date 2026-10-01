@@ -2,6 +2,8 @@ import { StyleSheet } from 'react-native';
 
 import BreakableHeart from '@/components/BreakableHeart';
 import { Text, View } from '@/components/Themed';
+import { useColorScheme } from '@/components/useColorScheme';
+import Colors from '@/constants/Colors';
 import type { Recipe } from '@/types/pantry';
 
 type Props = {
@@ -11,8 +13,15 @@ type Props = {
 };
 
 export default function RecipeCard({ recipe, isFavorited, onToggleFavorite }: Props) {
+  const theme = useColorScheme();
+  const palette = Colors[theme];
+
   return (
-    <View style={styles.card}>
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: palette.card, borderColor: palette.cardBorder },
+      ]}>
       <View style={styles.titleRow}>
         <Text style={styles.title}>{recipe.title}</Text>
         {onToggleFavorite && (
@@ -34,7 +43,7 @@ export default function RecipeCard({ recipe, isFavorited, onToggleFavorite }: Pr
           <Text style={styles.sectionLabel}>🧂 Also needed</Text>
           <View style={styles.chipRow}>
             {recipe.additionalIngredients.map((ingredient, index) => (
-              <View key={index} style={styles.chip}>
+              <View key={index} style={[styles.chip, { backgroundColor: palette.chipNeutral }]}>
                 <Text style={styles.chipText}>{ingredient}</Text>
               </View>
             ))}
@@ -61,9 +70,7 @@ const styles = StyleSheet.create({
   card: {
     padding: 16,
     borderRadius: 20,
-    backgroundColor: '#FFF8F2',
     borderWidth: 1,
-    borderColor: '#F0DCC8',
     marginBottom: 16,
     shadowColor: '#8B5E3C',
     shadowOpacity: 0.12,
@@ -82,7 +89,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 19,
     fontWeight: '800',
-    color: '#5C3A21',
   },
   sectionLabel: {
     fontSize: 12,
@@ -102,11 +108,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 14,
-    backgroundColor: '#EFE3D4',
   },
   chipText: {
     fontSize: 13,
-    color: '#5C3A21',
   },
   chipUrgent: {
     backgroundColor: '#FBD9E3',

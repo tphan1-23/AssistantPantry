@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Animated, Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import BreakableHeart from '@/components/BreakableHeart';
@@ -14,9 +14,17 @@ type Props = {
 
 const GRADIENT = ['#FFB3C6', '#FF6F9C', '#D6336C'] as const;
 
+// The heart button's own position (right:16, bottom:24, 52x52 - see styles
+// below), used to compute how far the popup needs to travel from the
+// button's center out to its resting centered position.
+const HEART_RIGHT = 16;
+const HEART_BOTTOM = 24;
+const HEART_SIZE = 52;
+
 // A single always-present heart icon is the one entry point into favorites.
-// The popup grows out of the heart itself (Messenger chat-head style)
-// instead of just fading in centered on screen.
+// The popup grows out of the heart itself (Messenger chat-head style) but
+// settles into a large, centered, scrollable panel rather than staying
+// tucked in the corner.
 export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -28,13 +36,13 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
     Animated.spring(progress, {
       toValue: 1,
       useNativeDriver: true,
-      friction: 7,
-      tension: 55,
+      friction: 8,
+      tension: 50,
     }).start();
   }
 
   function close() {
-    Animated.timing(progress, { toValue: 0, duration: 160, useNativeDriver: true }).start(() => {
+    Animated.timing(progress, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => {
       setIsOpen(false);
       setSelectedId(null);
     });
@@ -45,9 +53,15 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
     setSelectedId(null);
   }
 
-  const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.08, 1] });
-  const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [46, 0] });
-  const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [70, 0] });
+  const { width: screenW, height: screenH } = Dimensions.get('window');
+  const heartCenterX = screenW - HEART_RIGHT - HEART_SIZE / 2;
+  const heartCenterY = screenH - HEART_BOTTOM - HEART_SIZE / 2;
+  const originX = heartCenterX - screenW / 2;
+  const originY = heartCenterY - screenH / 2;
+
+  const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.06, 1] });
+  const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [originX, 0] });
+  const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [originY, 0] });
 
   return (
     <>
@@ -69,7 +83,7 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
               styles.popup,
               { opacity: progress, transform: [{ translateX }, { translateY }, { scale }] },
             ]}>
-            <Pressable onPress={(e) => e.stopPropagation()}>
+            <Pressable style={styles.popupInner} onPress={(e) => e.stopPropagation()}>
               <LinearGradient colors={GRADIENT} style={styles.popupGradient}>
                 <ScrollView contentContainerStyle={styles.popupContent}>
                   {selected ? (
@@ -80,7 +94,11 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
                         hitSlop={8}>
                         <Text style={styles.backText}>‹ Favorites</Text>
                       </Pressable>
-                      <RecipeCard recipe={selected} isFavorited onToggleFavorite={() => handleRemove(selected.id)} />
+                      <RecipeCard
+                        recipe={selected}
+                        isFavorited
+                        onToggleFavorite={() => handleRemove(selected.id)}
+                      />
                     </>
                   ) : (
                     <>
@@ -119,13 +137,13 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
 const styles = StyleSheet.create({
   heartButtonWrap: {
     position: 'absolute',
-    right: 16,
-    bottom: 24,
+    right: HEART_RIGHT,
+    bottom: HEART_BOTTOM,
   },
   heartButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: HEART_SIZE,
+    height: HEART_SIZE,
+    borderRadius: HEART_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -157,17 +175,18 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     flex: 1,
-    backgroundColor: '#00000055',
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
-    padding: 16,
-    paddingBottom: 92,
+    backgroundColor: '#00000066',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   popup: {
-    width: '100%',
-    maxWidth: 360,
-    maxHeight: '75%',
-    borderRadius: 24,
+    width: '94%',
+    height: '85%',
+  },
+  popupInner: {
+    flex: 1,
+    borderRadius: 26,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOpacity: 0.25,
@@ -176,22 +195,23 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   popupGradient: {
-    borderRadius: 24,
+    flex: 1,
   },
   popupContent: {
-    padding: 18,
+    padding: 20,
+    flexGrow: 1,
   },
   heading: {
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: '800',
     color: 'white',
-    marginBottom: 14,
+    marginBottom: 16,
   },
   empty: {
     color: 'white',
     opacity: 0.9,
     textAlign: 'center',
-    paddingVertical: 20,
+    marginTop: 40,
   },
   listRow: {
     flexDirection: 'row',
@@ -199,24 +219,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#ffffff26',
     borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginBottom: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 10,
   },
   listRowTitleArea: {
     flex: 1,
     paddingRight: 10,
   },
   listRowText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: 'white',
   },
   backRow: {
-    paddingBottom: 12,
+    paddingBottom: 14,
   },
   backText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     color: 'white',
   },

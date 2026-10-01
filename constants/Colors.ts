@@ -13,6 +13,9 @@ export default {
     tint: tintColorLight,
     tabIconDefault: '#B8A48D',
     tabIconSelected: tintColorLight,
+    card: '#FFF8F2',
+    cardBorder: '#F0DCC8',
+    chipNeutral: '#EFE3D4',
   },
   dark: {
     text: '#F1E4D4',
@@ -20,5 +23,8 @@ export default {
     tint: tintColorDark,
     tabIconDefault: '#8A7360',
     tabIconSelected: tintColorDark,
+    card: '#33261B',
+    cardBorder: '#4A392B',
+    chipNeutral: '#4A392B',
   },
 };
