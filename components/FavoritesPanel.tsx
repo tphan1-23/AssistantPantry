@@ -87,58 +87,74 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
       )}
 
       <Modal visible={isOpen} transparent animationType="none" onRequestClose={close}>
-        <Pressable style={styles.backdrop} onPress={close}>
-          <Animated.View
-            style={[
-              styles.popup,
-              { opacity: progress, transform: [{ translateX }, { translateY }, { scale }] },
-            ]}>
-            <RNView style={styles.popupInner}>
-              <LinearGradient colors={GRADIENT} style={styles.popupGradient}>
-                <ScrollView style={styles.popupScroll} contentContainerStyle={styles.popupContent}>
-                  {selected ? (
-                    <>
-                      <Pressable
-                        onPress={() => setSelectedId(null)}
-                        style={styles.backRow}
-                        hitSlop={8}>
-                        <Text style={styles.backText}>‹ Favorites</Text>
-                      </Pressable>
-                      <RecipeCard
-                        recipe={selected}
-                        isFavorited
-                        onToggleFavorite={() => handleRemove(selected.id)}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <Text style={styles.heading}>💕 Favorite Recipes</Text>
-                      {favorites.length === 0 ? (
-                        <Text style={styles.empty}>No favorite recipes yet.</Text>
-                      ) : (
-                        favorites.map((fav) => (
-                          <View key={fav.id} style={styles.listRow}>
-                            <Pressable
-                              style={styles.listRowTitleArea}
-                              onPress={() => setSelectedId(fav.id)}>
-                              <Text style={styles.listRowText}>{fav.title}</Text>
-                            </Pressable>
-                            <BreakableHeart
-                              filled
-                              size={22}
-                              color="white"
-                              onPress={() => handleRemove(fav.id)}
-                            />
-                          </View>
-                        ))
-                      )}
-                    </>
-                  )}
-                </ScrollView>
-              </LinearGradient>
-            </RNView>
-          </Animated.View>
-        </Pressable>
+        <RNView style={styles.modalRoot}>
+          {/* A full-screen tap-to-close layer *behind* the popup, as a
+              sibling rather than an ancestor. An ancestor Pressable can
+              still end up owning the touch responder for a drag that starts
+              on plain (non-Pressable) content inside it - which is exactly
+              what was breaking the ScrollView's scroll gesture and closing
+              the popup on every tap. Siblings don't have that problem: a
+              touch that lands on the popup's own pixels never reaches this
+              layer at all. */}
+          <Pressable style={StyleSheet.absoluteFill} onPress={close} />
+
+          <RNView
+            style={[StyleSheet.absoluteFill, styles.centerWrap]}
+            pointerEvents="box-none">
+            <Animated.View
+              style={[
+                styles.popup,
+                { opacity: progress, transform: [{ translateX }, { translateY }, { scale }] },
+              ]}>
+              <RNView style={styles.popupInner}>
+                <LinearGradient colors={GRADIENT} style={styles.popupGradient}>
+                  <ScrollView
+                    style={styles.popupScroll}
+                    contentContainerStyle={styles.popupContent}>
+                    {selected ? (
+                      <>
+                        <Pressable
+                          onPress={() => setSelectedId(null)}
+                          style={styles.backRow}
+                          hitSlop={8}>
+                          <Text style={styles.backText}>‹ Favorites</Text>
+                        </Pressable>
+                        <RecipeCard
+                          recipe={selected}
+                          isFavorited
+                          onToggleFavorite={() => handleRemove(selected.id)}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <Text style={styles.heading}>💕 Favorite Recipes</Text>
+                        {favorites.length === 0 ? (
+                          <Text style={styles.empty}>No favorite recipes yet.</Text>
+                        ) : (
+                          favorites.map((fav) => (
+                            <View key={fav.id} style={styles.listRow}>
+                              <Pressable
+                                style={styles.listRowTitleArea}
+                                onPress={() => setSelectedId(fav.id)}>
+                                <Text style={styles.listRowText}>{fav.title}</Text>
+                              </Pressable>
+                              <BreakableHeart
+                                filled
+                                size={22}
+                                color="white"
+                                onPress={() => handleRemove(fav.id)}
+                              />
+                            </View>
+                          ))
+                        )}
+                      </>
+                    )}
+                  </ScrollView>
+                </LinearGradient>
+              </RNView>
+            </Animated.View>
+          </RNView>
+        </RNView>
       </Modal>
     </>
   );
@@ -183,9 +199,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  backdrop: {
+  modalRoot: {
     flex: 1,
     backgroundColor: '#00000066',
+  },
+  centerWrap: {
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
