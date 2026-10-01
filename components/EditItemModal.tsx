@@ -3,7 +3,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, TextInput } from 'reac
 
 import { Text, View } from '@/components/Themed';
 import DateField from '@/components/DateField';
-import { BRAND_COLOR } from '@/constants/Colors';
+import GradientButton from '@/components/GradientButton';
 import type { PantryItem } from '@/types/pantry';
 
 type Props = {
@@ -99,9 +99,9 @@ function EditItemForm({
 
       <DateField label="Expiry date" value={expiryDate} onChange={setExpiryDate} />
 
-      <Pressable style={styles.saveButton} onPress={handleSave} disabled={isSaving}>
-        <Text style={styles.saveButtonText}>{isSaving ? 'Saving...' : 'Save'}</Text>
-      </Pressable>
+      <View style={styles.saveButtonWrap}>
+        <GradientButton title="Save" onPress={handleSave} loading={isSaving} />
+      </View>
 
       <Pressable style={styles.deleteButton} onPress={handleDelete}>
         <Text style={styles.deleteButtonText}>Remove from Pantry</Text>
@@ -156,17 +156,8 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 6,
   },
-  saveButton: {
+  saveButtonWrap: {
     marginTop: 8,
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    backgroundColor: BRAND_COLOR,
-  },
-  saveButtonText: {
-    color: 'white',
-    fontWeight: '700',
-    fontSize: 16,
   },
   deleteButton: {
     paddingVertical: 12,

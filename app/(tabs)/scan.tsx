@@ -4,8 +4,8 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 
+import GradientButton from '@/components/GradientButton';
 import { Text, View } from '@/components/Themed';
-import { BRAND_COLOR } from '@/constants/Colors';
 import { scanImageForItems } from '@/services/gemini';
 import { setPendingScan } from '@/services/scanSession';
 
@@ -70,9 +70,7 @@ export default function ScanScreen() {
             <ActivityIndicator size="large" />
           ) : (
             <>
-              <Pressable style={styles.button} onPress={handleUsePhoto}>
-                <Text style={styles.buttonText}>Use This Photo</Text>
-              </Pressable>
+              <GradientButton title="Use This Photo" onPress={handleUsePhoto} />
               <Pressable style={styles.secondaryButton} onPress={handleRetake}>
                 <Text style={styles.buttonText}>Retake</Text>
               </Pressable>
@@ -91,9 +89,7 @@ export default function ScanScreen() {
     return (
       <View style={styles.center}>
         <Text style={styles.message}>We need camera access to scan receipts and fridge items.</Text>
-        <Pressable style={styles.button} onPress={requestPermission}>
-          <Text style={styles.buttonText}>Grant Permission</Text>
-        </Pressable>
+        <GradientButton title="Grant Permission" onPress={requestPermission} />
         <Pressable style={styles.secondaryButton} onPress={handlePickFromGallery}>
           <Text style={styles.buttonText}>Pick from Gallery Instead</Text>
         </Pressable>
@@ -105,9 +101,7 @@ export default function ScanScreen() {
     <View style={styles.container}>
       <CameraView ref={cameraRef} style={styles.camera} facing="back" />
       <View style={styles.controls}>
-        <Pressable style={styles.button} onPress={handleCapture}>
-          <Text style={styles.buttonText}>Capture</Text>
-        </Pressable>
+        <GradientButton title="Capture" onPress={handleCapture} />
         <Pressable style={styles.secondaryButton} onPress={handlePickFromGallery}>
           <Text style={styles.buttonText}>Pick from Gallery</Text>
         </Pressable>
@@ -138,12 +132,6 @@ const styles = StyleSheet.create({
   message: {
     textAlign: 'center',
     marginBottom: 8,
-  },
-  button: {
-    backgroundColor: BRAND_COLOR,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
   },
   secondaryButton: {
     paddingVertical: 12,

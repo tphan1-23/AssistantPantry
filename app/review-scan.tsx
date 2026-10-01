@@ -5,6 +5,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 
 import { Text, View } from '@/components/Themed';
 import DateField from '@/components/DateField';
+import GradientButton from '@/components/GradientButton';
 import { BRAND_COLOR } from '@/constants/Colors';
 import {
   expiryTimestampForScannedItem,
@@ -193,18 +194,14 @@ export default function ReviewScanScreen() {
         ))}
       </ScrollView>
 
-      <Pressable
-        style={[styles.addButton, drafts.length === 0 && styles.addButtonDisabled]}
-        onPress={handleAddAll}
-        disabled={isSaving || drafts.length === 0}>
-        <Text style={styles.addButtonText}>
-          {isSaving
-            ? 'Saving...'
-            : drafts.length === 0
-              ? 'Nothing to Add'
-              : `Add ${drafts.length} to Pantry`}
-        </Text>
-      </Pressable>
+      <View style={styles.addButtonWrap}>
+        <GradientButton
+          title={drafts.length === 0 ? 'Nothing to Add' : `Add ${drafts.length} to Pantry`}
+          onPress={handleAddAll}
+          disabled={drafts.length === 0}
+          loading={isSaving}
+        />
+      </View>
     </View>
   );
 }
@@ -317,19 +314,7 @@ const styles = StyleSheet.create({
   choiceChipTextActive: {
     color: 'white',
   },
-  addButton: {
+  addButtonWrap: {
     margin: 16,
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    backgroundColor: BRAND_COLOR,
-  },
-  addButtonDisabled: {
-    opacity: 0.5,
-  },
-  addButtonText: {
-    color: 'white',
-    fontWeight: '700',
-    fontSize: 16,
   },
 });

@@ -65,16 +65,18 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
 
   return (
     <>
-      <Pressable style={styles.heartButtonWrap} onPress={open}>
-        <LinearGradient colors={GRADIENT} style={styles.heartButton}>
-          <Text style={styles.heartButtonIcon}>♥</Text>
-        </LinearGradient>
-        {favorites.length > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{favorites.length}</Text>
-          </View>
-        )}
-      </Pressable>
+      {!isOpen && (
+        <Pressable style={styles.heartButtonWrap} onPress={open}>
+          <LinearGradient colors={GRADIENT} style={styles.heartButton}>
+            <Text style={styles.heartButtonIcon}>♥</Text>
+          </LinearGradient>
+          {favorites.length > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{favorites.length}</Text>
+            </View>
+          )}
+        </Pressable>
+      )}
 
       <Modal visible={isOpen} transparent animationType="none" onRequestClose={close}>
         <Pressable style={styles.backdrop} onPress={close}>
@@ -85,7 +87,7 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
             ]}>
             <Pressable style={styles.popupInner} onPress={(e) => e.stopPropagation()}>
               <LinearGradient colors={GRADIENT} style={styles.popupGradient}>
-                <ScrollView contentContainerStyle={styles.popupContent}>
+                <ScrollView style={styles.popupScroll} contentContainerStyle={styles.popupContent}>
                   {selected ? (
                     <>
                       <Pressable
@@ -195,6 +197,9 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   popupGradient: {
+    flex: 1,
+  },
+  popupScroll: {
     flex: 1,
   },
   popupContent: {

@@ -1,23 +1,21 @@
-import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet } from 'react-native';
-import { useFocusEffect } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from "expo-router";
+import { useSQLiteContext } from "expo-sqlite";
+import { useCallback, useRef, useState } from "react";
+import { Alert, FlatList, StyleSheet } from "react-native";
 
-import FavoritesPanel from '@/components/FavoritesPanel';
-import RecipeCard from '@/components/RecipeCard';
-import { Text, View } from '@/components/Themed';
+import FavoritesPanel from "@/components/FavoritesPanel";
+import GradientButton from "@/components/GradientButton";
+import RecipeCard from "@/components/RecipeCard";
+import { Text, View } from "@/components/Themed";
 import {
   addFavoriteRecipe,
   getAllItems,
   getExpiringItems,
   getFavoriteRecipes,
   removeFavoriteRecipe,
-} from '@/services/database';
-import { generateZeroWasteRecipes } from '@/services/gemini';
-import type { FavoriteRecipe, PantryItem, Recipe } from '@/types/pantry';
-
-const BUTTON_GRADIENT = ['#C9986B', '#8B5E3C'] as const;
+} from "@/services/database";
+import { generateZeroWasteRecipes } from "@/services/gemini";
+import type { FavoriteRecipe, PantryItem, Recipe } from "@/types/pantry";
 
 export default function RecipesScreen() {
   const db = useSQLiteContext();
@@ -38,34 +36,36 @@ export default function RecipesScreen() {
     useCallback(() => {
       let cancelled = false;
 
-      Promise.all([getAllItems(db), getExpiringItems(db, 72), getFavoriteRecipes(db)]).then(
-        ([allItems, expiring, favoriteRecipes]) => {
-          if (cancelled) return;
-          setExpiringItems(expiring);
-          setFavorites(favoriteRecipes);
+      Promise.all([
+        getAllItems(db),
+        getExpiringItems(db, 72),
+        getFavoriteRecipes(db),
+      ]).then(([allItems, expiring, favoriteRecipes]) => {
+        if (cancelled) return;
+        setExpiringItems(expiring);
+        setFavorites(favoriteRecipes);
 
-          setRecipes((prevRecipes) => {
-            if (prevRecipes.length === 0) return prevRecipes;
+        setRecipes((prevRecipes) => {
+          if (prevRecipes.length === 0) return prevRecipes;
 
-            const allIds = new Set(allItems.map((item) => item.id));
-            const stillValid =
-              allItems.length > 0 &&
-              expiring.length > 0 &&
-              recipeBasisIdsRef.current.every((id) => allIds.has(id));
+          const allIds = new Set(allItems.map((item) => item.id));
+          const stillValid =
+            allItems.length > 0 &&
+            expiring.length > 0 &&
+            recipeBasisIdsRef.current.every((id) => allIds.has(id));
 
-            if (!stillValid) {
-              recipeBasisIdsRef.current = [];
-              return [];
-            }
-            return prevRecipes;
-          });
-        }
-      );
+          if (!stillValid) {
+            recipeBasisIdsRef.current = [];
+            return [];
+          }
+          return prevRecipes;
+        });
+      });
 
       return () => {
         cancelled = true;
       };
-    }, [db])
+    }, [db]),
   );
 
   async function handleGenerate() {
@@ -75,7 +75,10 @@ export default function RecipesScreen() {
     setExpiringItems(freshExpiring);
 
     if (freshExpiring.length === 0) {
-      Alert.alert('Nothing expiring soon', 'No items are within 72 hours of their estimated expiry.');
+      Alert.alert(
+        "Nothing expiring soon",
+        "No items are within 72 hours of their estimated expiry.",
+      );
       return;
     }
     setIsLoading(true);
@@ -85,7 +88,10 @@ export default function RecipesScreen() {
       setRecipes(result);
       recipeBasisIdsRef.current = freshExpiring.map((item) => item.id);
     } catch (error) {
-      Alert.alert('Could not generate recipes', error instanceof Error ? error.message : 'Unknown error');
+      Alert.alert(
+        "Could not generate recipes",
+        error instanceof Error ? error.message : "Unknown error",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -109,10 +115,12 @@ export default function RecipesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.screenTitle}>🍲 Zero-Waste Recipes</Text>
+        <Text style={styles.screenTitle}>Zero-Waste Recipes</Text>
 
         {expiringItems.length === 0 ? (
-          <Text style={styles.subtitle}>No items expiring within 72 hours.</Text>
+          <Text style={styles.subtitle}>
+            No items expiring within 72 hours.
+          </Text>
         ) : (
           <View style={styles.expiringChipRow}>
             {expiringItems.map((item) => (
@@ -123,15 +131,11 @@ export default function RecipesScreen() {
           </View>
         )}
 
-        <Pressable onPress={handleGenerate} disabled={isLoading}>
-          <LinearGradient colors={BUTTON_GRADIENT} style={styles.button}>
-            {isLoading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.buttonText}>✨ Generate Zero-Waste Recipes</Text>
-            )}
-          </LinearGradient>
-        </Pressable>
+        <GradientButton
+          title="Generate Zero-Waste Recipes"
+          onPress={handleGenerate}
+          loading={isLoading}
+        />
       </View>
 
       <FlatList
@@ -140,7 +144,10 @@ export default function RecipesScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           !isLoading ? (
-            <Text style={styles.empty}>No recipes generated yet. Tap the button above to cook something up!</Text>
+            <Text style={styles.empty}>
+              No recipes generated yet. Tap the button above to cook something
+              up!
+            </Text>
           ) : null
         }
         renderItem={({ item }) => (
@@ -167,36 +174,27 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: "800",
   },
   subtitle: {
     fontSize: 14,
     opacity: 0.7,
   },
   expiringChipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 6,
   },
   expiringChip: {
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 14,
-    backgroundColor: '#FBD9E3',
+    backgroundColor: "#FBD9E3",
   },
   expiringChipText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#9E2A52',
-  },
-  button: {
-    paddingVertical: 13,
-    borderRadius: 26,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: '700',
+    fontWeight: "600",
+    color: "#9E2A52",
   },
   listContent: {
     paddingHorizontal: 16,
@@ -204,7 +202,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   empty: {
-    textAlign: 'center',
+    textAlign: "center",
     opacity: 0.6,
     marginTop: 24,
     paddingHorizontal: 20,

@@ -1,17 +1,11 @@
 import { router } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useState } from "react";
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-} from "react-native";
+import { Alert, ScrollView, StyleSheet, TextInput } from "react-native";
 
 import DateField from "@/components/DateField";
+import GradientButton from "@/components/GradientButton";
 import { Text, View } from "@/components/Themed";
-import { BRAND_COLOR } from "@/constants/Colors";
 import { insertItem } from "@/services/database";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -96,15 +90,9 @@ export default function AddItemScreen() {
           onChange={setExpiryDate}
         />
 
-        <Pressable
-          style={styles.saveButton}
-          onPress={handleSave}
-          disabled={isSaving}
-        >
-          <Text style={styles.saveButtonText}>
-            {isSaving ? "Saving..." : "Add to Pantry"}
-          </Text>
-        </Pressable>
+        <View style={styles.saveButtonWrap}>
+          <GradientButton title="Add to Pantry" onPress={handleSave} loading={isSaving} />
+        </View>
       </ScrollView>
     </View>
   );
@@ -140,16 +128,7 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 6,
   },
-  saveButton: {
+  saveButtonWrap: {
     marginTop: 8,
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    backgroundColor: BRAND_COLOR,
-  },
-  saveButtonText: {
-    color: "white",
-    fontWeight: "700",
-    fontSize: 16,
   },
 });
