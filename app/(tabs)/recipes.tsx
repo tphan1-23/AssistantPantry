@@ -2,11 +2,11 @@ import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import FavoritesPanel from '@/components/FavoritesPanel';
 import RecipeCard from '@/components/RecipeCard';
 import { Text, View } from '@/components/Themed';
-import { BRAND_COLOR } from '@/constants/Colors';
 import {
   addFavoriteRecipe,
   getAllItems,
@@ -16,6 +16,8 @@ import {
 } from '@/services/database';
 import { generateZeroWasteRecipes } from '@/services/gemini';
 import type { FavoriteRecipe, PantryItem, Recipe } from '@/types/pantry';
+
+const BUTTON_GRADIENT = ['#C9986B', '#8B5E3C'] as const;
 
 export default function RecipesScreen() {
   const db = useSQLiteContext();
@@ -107,17 +109,28 @@ export default function RecipesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.subtitle}>
-          {expiringItems.length === 0
-            ? 'No items expiring within 72 hours.'
-            : `Expiring soon: ${expiringItems.map((item) => item.name).join(', ')}`}
-        </Text>
-        <Pressable style={styles.button} onPress={handleGenerate} disabled={isLoading}>
-          {isLoading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.buttonText}>Generate Zero-Waste Recipes</Text>
-          )}
+        <Text style={styles.screenTitle}>🍲 Zero-Waste Recipes</Text>
+
+        {expiringItems.length === 0 ? (
+          <Text style={styles.subtitle}>No items expiring within 72 hours.</Text>
+        ) : (
+          <View style={styles.expiringChipRow}>
+            {expiringItems.map((item) => (
+              <View key={item.id} style={styles.expiringChip}>
+                <Text style={styles.expiringChipText}>{item.name}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        <Pressable onPress={handleGenerate} disabled={isLoading}>
+          <LinearGradient colors={BUTTON_GRADIENT} style={styles.button}>
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>✨ Generate Zero-Waste Recipes</Text>
+            )}
+          </LinearGradient>
         </Pressable>
       </View>
 
@@ -126,7 +139,9 @@ export default function RecipesScreen() {
         keyExtractor={(recipe) => recipe.title}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          !isLoading ? <Text style={styles.empty}>No recipes generated yet.</Text> : null
+          !isLoading ? (
+            <Text style={styles.empty}>No recipes generated yet. Tap the button above to cook something up!</Text>
+          ) : null
         }
         renderItem={({ item }) => (
           <RecipeCard
@@ -148,30 +163,50 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 16,
-    gap: 10,
+    gap: 12,
+  },
+  screenTitle: {
+    fontSize: 22,
+    fontWeight: '800',
   },
   subtitle: {
     fontSize: 14,
-    opacity: 0.8,
+    opacity: 0.7,
+  },
+  expiringChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  expiringChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    backgroundColor: '#FBD9E3',
+  },
+  expiringChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9E2A52',
   },
   button: {
-    backgroundColor: BRAND_COLOR,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 13,
+    borderRadius: 26,
     alignItems: 'center',
   },
   buttonText: {
     color: 'white',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 100,
     flexGrow: 1,
   },
   empty: {
     textAlign: 'center',
     opacity: 0.6,
     marginTop: 24,
+    paddingHorizontal: 20,
   },
 });

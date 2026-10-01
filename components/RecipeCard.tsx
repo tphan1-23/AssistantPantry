@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Animated, Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
+import BreakableHeart from '@/components/BreakableHeart';
 import { Text, View } from '@/components/Themed';
 import type { Recipe } from '@/types/pantry';
 
@@ -11,132 +11,136 @@ type Props = {
 };
 
 export default function RecipeCard({ recipe, isFavorited, onToggleFavorite }: Props) {
-  // useState (not useRef) so the lazily-created Animated.Value instance is
-  // safe to read during render; we still only ever mutate it imperatively.
-  const [scale] = useState(() => new Animated.Value(1));
-  const [rotate] = useState(() => new Animated.Value(0));
-  const [opacity] = useState(() => new Animated.Value(1));
-  const [isBreaking, setIsBreaking] = useState(false);
-
-  function handleHeartPress() {
-    if (!onToggleFavorite) return;
-
-    if (!isFavorited) {
-      onToggleFavorite();
-      return;
-    }
-
-    // Unfavoriting: play a little "heart breaking away" animation (a shake,
-    // then a pop-and-fade) before actually removing it.
-    setIsBreaking(true);
-    Animated.sequence([
-      Animated.timing(rotate, { toValue: 1, duration: 90, useNativeDriver: true }),
-      Animated.timing(rotate, { toValue: -1, duration: 90, useNativeDriver: true }),
-      Animated.timing(rotate, { toValue: 0, duration: 60, useNativeDriver: true }),
-      Animated.parallel([
-        Animated.timing(scale, { toValue: 1.7, duration: 220, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0, duration: 220, useNativeDriver: true }),
-      ]),
-    ]).start(() => {
-      onToggleFavorite();
-      scale.setValue(1);
-      rotate.setValue(0);
-      opacity.setValue(1);
-      setIsBreaking(false);
-    });
-  }
-
-  const rotateInterpolate = rotate.interpolate({
-    inputRange: [-1, 1],
-    outputRange: ['-25deg', '25deg'],
-  });
-
   return (
     <View style={styles.card}>
       <View style={styles.titleRow}>
         <Text style={styles.title}>{recipe.title}</Text>
         {onToggleFavorite && (
-          <Pressable
-            onPress={handleHeartPress}
-            hitSlop={10}
-            disabled={isBreaking}
-            style={styles.heartButton}>
-            <Animated.Text
-              style={[
-                styles.heart,
-                isFavorited && styles.heartActive,
-                { transform: [{ scale }, { rotate: rotateInterpolate }], opacity },
-              ]}>
-              {isFavorited ? '♥' : '♡'}
-            </Animated.Text>
-          </Pressable>
+          <BreakableHeart filled={!!isFavorited} onPress={onToggleFavorite} size={26} />
         )}
       </View>
 
-      <Text style={styles.sectionLabel}>Uses expiring ingredients</Text>
-      <Text style={styles.ingredients}>{recipe.urgentIngredientsUsed.join(', ')}</Text>
+      <Text style={styles.sectionLabel}>🌿 Uses expiring ingredients</Text>
+      <View style={styles.chipRow}>
+        {recipe.urgentIngredientsUsed.map((ingredient, index) => (
+          <View key={index} style={[styles.chip, styles.chipUrgent]}>
+            <Text style={styles.chipTextUrgent}>{ingredient}</Text>
+          </View>
+        ))}
+      </View>
 
       {recipe.additionalIngredients.length > 0 && (
         <>
-          <Text style={styles.sectionLabel}>Also needed</Text>
-          <Text style={styles.ingredients}>{recipe.additionalIngredients.join(', ')}</Text>
+          <Text style={styles.sectionLabel}>🧂 Also needed</Text>
+          <View style={styles.chipRow}>
+            {recipe.additionalIngredients.map((ingredient, index) => (
+              <View key={index} style={styles.chip}>
+                <Text style={styles.chipText}>{ingredient}</Text>
+              </View>
+            ))}
+          </View>
         </>
       )}
 
-      <Text style={styles.sectionLabel}>Instructions</Text>
-      {recipe.instructions.map((step, index) => (
-        <Text key={index} style={styles.step}>
-          {index + 1}. {step}
-        </Text>
-      ))}
+      <Text style={styles.sectionLabel}>👩‍🍳 Instructions</Text>
+      <View style={styles.instructions}>
+        {recipe.instructions.map((step, index) => (
+          <View key={index} style={styles.stepRow}>
+            <View style={styles.stepBadge}>
+              <Text style={styles.stepBadgeText}>{index + 1}</Text>
+            </View>
+            <Text style={styles.stepText}>{step}</Text>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    padding: 14,
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8888',
-    marginBottom: 12,
+    padding: 16,
+    borderRadius: 20,
+    backgroundColor: '#FFF8F2',
+    borderWidth: 1,
+    borderColor: '#F0DCC8',
+    marginBottom: 16,
+    shadowColor: '#8B5E3C',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    marginBottom: 10,
+    gap: 8,
   },
   title: {
     flex: 1,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  heartButton: {
-    paddingLeft: 10,
-  },
-  heart: {
-    fontSize: 24,
-    opacity: 0.5,
-  },
-  heartActive: {
-    opacity: 1,
-    color: '#d6336c',
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#5C3A21',
   },
   sectionLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     textTransform: 'uppercase',
-    opacity: 0.6,
-    marginTop: 8,
+    letterSpacing: 0.3,
+    opacity: 0.55,
+    marginTop: 12,
+    marginBottom: 6,
   },
-  ingredients: {
-    fontSize: 14,
-    marginTop: 2,
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
   },
-  step: {
+  chip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    backgroundColor: '#EFE3D4',
+  },
+  chipText: {
+    fontSize: 13,
+    color: '#5C3A21',
+  },
+  chipUrgent: {
+    backgroundColor: '#FBD9E3',
+  },
+  chipTextUrgent: {
+    fontSize: 13,
+    color: '#9E2A52',
+    fontWeight: '600',
+  },
+  instructions: {
+    gap: 8,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  stepBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#8B5E3C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  stepBadgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  stepText: {
+    flex: 1,
     fontSize: 14,
-    marginTop: 4,
     lineHeight: 20,
   },
 });
