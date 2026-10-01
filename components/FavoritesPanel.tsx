@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
+import {
+  Animated,
+  Dimensions,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View as RNView,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import BreakableHeart from '@/components/BreakableHeart';
@@ -85,7 +93,7 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
               styles.popup,
               { opacity: progress, transform: [{ translateX }, { translateY }, { scale }] },
             ]}>
-            <Pressable style={styles.popupInner} onPress={(e) => e.stopPropagation()}>
+            <RNView style={styles.popupInner}>
               <LinearGradient colors={GRADIENT} style={styles.popupGradient}>
                 <ScrollView style={styles.popupScroll} contentContainerStyle={styles.popupContent}>
                   {selected ? (
@@ -128,7 +136,7 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
                   )}
                 </ScrollView>
               </LinearGradient>
-            </Pressable>
+            </RNView>
           </Animated.View>
         </Pressable>
       </Modal>
