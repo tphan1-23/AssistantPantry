@@ -4,6 +4,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, TextInput } from 'reac
 import { Text, View } from '@/components/Themed';
 import DateField from '@/components/DateField';
 import GradientButton from '@/components/GradientButton';
+import Colors from '@/constants/Colors';
 import type { PantryItem } from '@/types/pantry';
 
 type Props = {
@@ -18,6 +19,9 @@ export default function EditItemModal({ item, onClose, onSave, onDelete }: Props
     <Modal visible={item !== null} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View style={styles.sheet}>
+          <View style={styles.dragHandleRow}>
+            <View style={styles.dragHandle} />
+          </View>
           {/* Keyed by item id: remounts with fresh initial state per item instead
               of syncing via an effect, per React's rules-of-hooks purity guidance. */}
           {item && (
@@ -122,8 +126,18 @@ const styles = StyleSheet.create({
   },
   sheet: {
     maxHeight: '85%',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  dragHandleRow: {
+    alignItems: 'center',
+    paddingTop: 10,
+  },
+  dragHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.light.cardBorder,
   },
   scrollContent: {
     padding: 20,
@@ -141,9 +155,10 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   input: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8888',
-    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.cardBorder,
+    backgroundColor: 'white',
+    borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,

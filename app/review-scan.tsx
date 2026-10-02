@@ -6,7 +6,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { Text, View } from '@/components/Themed';
 import DateField from '@/components/DateField';
 import GradientButton from '@/components/GradientButton';
-import { BRAND_COLOR } from '@/constants/Colors';
+import Colors, { BRAND_COLOR } from '@/constants/Colors';
 import {
   expiryTimestampForScannedItem,
   findMatchingItem,
@@ -231,10 +231,16 @@ const styles = StyleSheet.create({
   },
   card: {
     gap: 10,
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8888',
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: Colors.light.card,
+    borderWidth: 1,
+    borderColor: Colors.light.cardBorder,
+    shadowColor: '#8B5E3C',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 1,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -242,8 +248,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   removeButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: '#fbe4e0',
   },
   removeButtonText: {
     fontSize: 12,
@@ -262,9 +270,10 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   input: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8888',
-    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.cardBorder,
+    backgroundColor: 'white',
+    borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 15,
@@ -278,9 +287,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   warningBanner: {
-    backgroundColor: '#fff3cd55',
-    borderRadius: 8,
-    padding: 10,
+    backgroundColor: '#fff3cd88',
+    borderRadius: 12,
+    padding: 12,
   },
   warningText: {
     fontSize: 13,
@@ -288,19 +297,20 @@ const styles = StyleSheet.create({
   },
   matchBanner: {
     gap: 8,
-    backgroundColor: '#e7f3ff33',
-    borderRadius: 8,
-    padding: 10,
+    backgroundColor: '#e7f3ff88',
+    borderRadius: 12,
+    padding: 12,
   },
   matchText: {
     fontSize: 13,
   },
   choiceChip: {
     flex: 1,
-    paddingVertical: 8,
-    borderRadius: 6,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8888',
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.cardBorder,
+    backgroundColor: 'white',
     alignItems: 'center',
   },
   choiceChipActive: {

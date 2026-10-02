@@ -6,6 +6,7 @@ import { Alert, ScrollView, StyleSheet, TextInput } from "react-native";
 import DateField from "@/components/DateField";
 import GradientButton from "@/components/GradientButton";
 import { Text, View } from "@/components/Themed";
+import Colors from "@/constants/Colors";
 import { insertItem } from "@/services/database";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -54,41 +55,48 @@ export default function AddItemScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Add Item</Text>
+        <Text style={styles.subtitle}>Add something to your pantry by hand.</Text>
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.fieldLabel}>Name</Text>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholder="e.g. Leftover Pizza..."
-        />
+        <View style={styles.card}>
+          <Text style={styles.fieldLabel}>Name</Text>
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="e.g. Leftover Pizza..."
+          />
 
-        <View style={styles.row}>
-          <View style={styles.flex1}>
-            <Text style={styles.fieldLabel}>Quantity</Text>
-            <TextInput
-              style={styles.input}
-              value={quantityText}
-              onChangeText={setQuantityText}
-              keyboardType="number-pad"
-            />
+          <View style={styles.row}>
+            <View style={styles.flex1}>
+              <Text style={styles.fieldLabel}>Quantity</Text>
+              <TextInput
+                style={styles.input}
+                value={quantityText}
+                onChangeText={setQuantityText}
+                keyboardType="number-pad"
+              />
+            </View>
+            <View style={styles.flex1}>
+              <Text style={styles.fieldLabel}>Unit</Text>
+              <TextInput
+                style={styles.input}
+                value={unit}
+                onChangeText={setUnit}
+                placeholder="item"
+              />
+            </View>
           </View>
-          <View style={styles.flex1}>
-            <Text style={styles.fieldLabel}>Unit</Text>
-            <TextInput
-              style={styles.input}
-              value={unit}
-              onChangeText={setUnit}
-              placeholder="item"
-            />
-          </View>
+
+          <DateField
+            label="Expiry date"
+            value={expiryDate}
+            onChange={setExpiryDate}
+          />
         </View>
-
-        <DateField
-          label="Expiry date"
-          value={expiryDate}
-          onChange={setExpiryDate}
-        />
 
         <View style={styles.saveButtonWrap}>
           <GradientButton title="Add to Pantry" onPress={handleSave} loading={isSaving} />
@@ -102,9 +110,36 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    gap: 2,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  subtitle: {
+    fontSize: 14,
+    opacity: 0.7,
+  },
   scrollContent: {
     padding: 16,
+    paddingTop: 8,
+  },
+  card: {
     gap: 14,
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: Colors.light.card,
+    borderWidth: 1,
+    borderColor: Colors.light.cardBorder,
+    shadowColor: "#8B5E3C",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 1,
   },
   fieldLabel: {
     fontSize: 12,
@@ -113,9 +148,10 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   input: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#8888",
-    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.cardBorder,
+    backgroundColor: "white",
+    borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
@@ -129,6 +165,6 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   saveButtonWrap: {
-    marginTop: 8,
+    marginTop: 16,
   },
 });

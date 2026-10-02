@@ -1,26 +1,26 @@
-import { useState } from 'react';
+import { LinearGradient } from "expo-linear-gradient";
+import { useState } from "react";
 import {
   Animated,
   Dimensions,
   Modal,
   Pressable,
+  View as RNView,
   ScrollView,
   StyleSheet,
-  View as RNView,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+} from "react-native";
 
-import BreakableHeart from '@/components/BreakableHeart';
-import RecipeCard from '@/components/RecipeCard';
-import { Text, View } from '@/components/Themed';
-import type { FavoriteRecipe } from '@/types/pantry';
+import BreakableHeart from "@/components/BreakableHeart";
+import RecipeCard from "@/components/RecipeCard";
+import { Text, View } from "@/components/Themed";
+import type { FavoriteRecipe } from "@/types/pantry";
 
 type Props = {
   favorites: FavoriteRecipe[];
   onUnfavorite: (id: number) => void;
 };
 
-const GRADIENT = ['#FFB3C6', '#FF6F9C', '#D6336C'] as const;
+const GRADIENT = ["#FFB3C6", "#FF6F9C", "#D6336C"] as const;
 
 // The heart button's own position (right:16, bottom:24, 52x52 - see styles
 // below), used to compute how far the popup needs to travel from the
@@ -50,7 +50,11 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
   }
 
   function close() {
-    Animated.timing(progress, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => {
+    Animated.timing(progress, {
+      toValue: 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start(() => {
       setIsOpen(false);
       setSelectedId(null);
     });
@@ -61,15 +65,24 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
     setSelectedId(null);
   }
 
-  const { width: screenW, height: screenH } = Dimensions.get('window');
+  const { width: screenW, height: screenH } = Dimensions.get("window");
   const heartCenterX = screenW - HEART_RIGHT - HEART_SIZE / 2;
   const heartCenterY = screenH - HEART_BOTTOM - HEART_SIZE / 2;
   const originX = heartCenterX - screenW / 2;
   const originY = heartCenterY - screenH / 2;
 
-  const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.06, 1] });
-  const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [originX, 0] });
-  const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [originY, 0] });
+  const scale = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.06, 1],
+  });
+  const translateX = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [originX, 0],
+  });
+  const translateY = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [originY, 0],
+  });
 
   return (
     <>
@@ -86,7 +99,12 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
         </Pressable>
       )}
 
-      <Modal visible={isOpen} transparent animationType="none" onRequestClose={close}>
+      <Modal
+        visible={isOpen}
+        transparent
+        animationType="none"
+        onRequestClose={close}
+      >
         <RNView style={styles.modalRoot}>
           {/* A full-screen tap-to-close layer *behind* the popup, as a
               sibling rather than an ancestor. An ancestor Pressable can
@@ -100,23 +118,30 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
 
           <RNView
             style={[StyleSheet.absoluteFill, styles.centerWrap]}
-            pointerEvents="box-none">
+            pointerEvents="box-none"
+          >
             <Animated.View
               style={[
                 styles.popup,
-                { opacity: progress, transform: [{ translateX }, { translateY }, { scale }] },
-              ]}>
+                {
+                  opacity: progress,
+                  transform: [{ translateX }, { translateY }, { scale }],
+                },
+              ]}
+            >
               <RNView style={styles.popupInner}>
                 <LinearGradient colors={GRADIENT} style={styles.popupGradient}>
                   <ScrollView
                     style={styles.popupScroll}
-                    contentContainerStyle={styles.popupContent}>
+                    contentContainerStyle={styles.popupContent}
+                  >
                     {selected ? (
                       <>
                         <Pressable
                           onPress={() => setSelectedId(null)}
                           style={styles.backRow}
-                          hitSlop={8}>
+                          hitSlop={8}
+                        >
                           <Text style={styles.backText}>‹ Favorites</Text>
                         </Pressable>
                         <RecipeCard
@@ -127,16 +152,21 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
                       </>
                     ) : (
                       <>
-                        <Text style={styles.heading}>💕 Favorite Recipes</Text>
+                        <Text style={styles.heading}>Favorite Recipes</Text>
                         {favorites.length === 0 ? (
-                          <Text style={styles.empty}>No favorite recipes yet.</Text>
+                          <Text style={styles.empty}>
+                            No favorite recipes yet.
+                          </Text>
                         ) : (
                           favorites.map((fav) => (
                             <View key={fav.id} style={styles.listRow}>
                               <Pressable
                                 style={styles.listRowTitleArea}
-                                onPress={() => setSelectedId(fav.id)}>
-                                <Text style={styles.listRowText}>{fav.title}</Text>
+                                onPress={() => setSelectedId(fav.id)}
+                              >
+                                <Text style={styles.listRowText}>
+                                  {fav.title}
+                                </Text>
                               </Pressable>
                               <BreakableHeart
                                 filled
@@ -162,7 +192,7 @@ export default function FavoritesPanel({ favorites, onUnfavorite }: Props) {
 
 const styles = StyleSheet.create({
   heartButtonWrap: {
-    position: 'absolute',
+    position: "absolute",
     right: HEART_RIGHT,
     bottom: HEART_BOTTOM,
   },
@@ -170,53 +200,53 @@ const styles = StyleSheet.create({
     width: HEART_SIZE,
     height: HEART_SIZE,
     borderRadius: HEART_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
     shadowOpacity: 0.3,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
   },
   heartButtonIcon: {
-    color: 'white',
+    color: "white",
     fontSize: 24,
   },
   badge: {
-    position: 'absolute',
+    position: "absolute",
     top: -4,
     right: -4,
     minWidth: 20,
     height: 20,
     borderRadius: 10,
     paddingHorizontal: 4,
-    backgroundColor: '#3A2418',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#3A2418",
+    alignItems: "center",
+    justifyContent: "center",
   },
   badgeText: {
-    color: 'white',
+    color: "white",
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   modalRoot: {
     flex: 1,
-    backgroundColor: '#00000066',
+    backgroundColor: "#00000066",
   },
   centerWrap: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   popup: {
-    width: '94%',
-    height: '85%',
+    width: "94%",
+    height: "85%",
   },
   popupInner: {
     flex: 1,
     borderRadius: 26,
-    overflow: 'hidden',
-    shadowColor: '#000',
+    overflow: "hidden",
+    shadowColor: "#000",
     shadowOpacity: 0.25,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -234,21 +264,21 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 20,
-    fontWeight: '800',
-    color: 'white',
+    fontWeight: "800",
+    color: "white",
     marginBottom: 16,
   },
   empty: {
-    color: 'white',
+    color: "white",
     opacity: 0.9,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 40,
   },
   listRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#ffffff26',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#ffffff26",
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -260,15 +290,15 @@ const styles = StyleSheet.create({
   },
   listRowText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
+    fontWeight: "600",
+    color: "white",
   },
   backRow: {
     paddingBottom: 14,
   },
   backText: {
     fontSize: 15,
-    fontWeight: '700',
-    color: 'white',
+    fontWeight: "700",
+    color: "white",
   },
 });

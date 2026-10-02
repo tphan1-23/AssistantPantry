@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { FlatList } from 'react-native';
+import { FlatList, StyleSheet } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
@@ -51,15 +51,22 @@ export default function InventoryScreen() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Pantry</Text>
+        <Text style={styles.subtitle}>
+          {items.length === 0
+            ? 'Nothing in your pantry yet'
+            : `${items.length} item${items.length === 1 ? '' : 's'}`}
+        </Text>
+      </View>
+
       <FlatList
         data={items}
         keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={{ padding: 16, flexGrow: 1 }}
+        contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <Text style={{ textAlign: 'center', opacity: 0.6, marginTop: 40 }}>
-            Your pantry is empty. Use the Scan or Add tabs to get started.
-          </Text>
+          <Text style={styles.empty}>Use the Scan or Add tabs to get started.</Text>
         }
         renderItem={({ item }) => (
           <PantryItemCard
@@ -79,3 +86,33 @@ export default function InventoryScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    gap: 2,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  subtitle: {
+    fontSize: 14,
+    opacity: 0.7,
+  },
+  listContent: {
+    padding: 16,
+    paddingTop: 8,
+    flexGrow: 1,
+  },
+  empty: {
+    textAlign: 'center',
+    opacity: 0.6,
+    marginTop: 40,
+  },
+});

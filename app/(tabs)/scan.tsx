@@ -135,9 +135,9 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 26,
     alignItems: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: '#8888',
   },
   buttonText: {

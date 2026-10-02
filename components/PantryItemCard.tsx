@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
+import Colors from '@/constants/Colors';
 import type { PantryItem } from '@/types/pantry';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -55,18 +56,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8888',
-    marginBottom: 8,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: Colors.light.card,
+    borderWidth: 1,
+    borderColor: Colors.light.cardBorder,
+    marginBottom: 10,
+    shadowColor: '#8B5E3C',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   info: {
     flex: 1,
   },
   name: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   quantity: {
     fontSize: 13,
@@ -86,13 +93,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8888',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14,
+    backgroundColor: Colors.light.chipNeutral,
   },
   actionText: {
     fontSize: 13,
+    fontWeight: '600',
   },
 });

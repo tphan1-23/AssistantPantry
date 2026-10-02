@@ -3,6 +3,7 @@ import { Platform, Pressable, StyleSheet } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { Text, View } from '@/components/Themed';
+import Colors from '@/constants/Colors';
 
 type Props = {
   label: string;
@@ -55,9 +56,10 @@ const styles = StyleSheet.create({
   field: {
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8888',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.light.cardBorder,
+    backgroundColor: 'white',
   },
   value: {
     fontSize: 15,
