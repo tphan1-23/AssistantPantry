@@ -6,6 +6,10 @@ export interface PantryItem {
   dateAddedTimestamp: number;
   expiryTimestamp: number;
   isConsumed: boolean;
+  /** When this item left the Pantry list (used or removed); null while still active. */
+  removedAtTimestamp: number | null;
+  /** Why it left the Pantry list - drives the label shown in History. */
+  removedReason: 'used' | 'removed' | null;
 }
 
 export interface Recipe {

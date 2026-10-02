@@ -13,7 +13,9 @@ export async function migrateDatabase(db: SQLiteDatabase) {
       unit TEXT NOT NULL DEFAULT 'item',
       dateAddedTimestamp INTEGER NOT NULL,
       expiryTimestamp INTEGER NOT NULL,
-      isConsumed INTEGER DEFAULT 0
+      isConsumed INTEGER DEFAULT 0,
+      removedAtTimestamp INTEGER,
+      removedReason TEXT
     );
     CREATE TABLE IF NOT EXISTS favorite_recipes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,7 +26,25 @@ export async function migrateDatabase(db: SQLiteDatabase) {
       createdAt INTEGER NOT NULL
     );
   `);
+
+  // Installs from before the history feature already have pantry_items
+  // without these columns, so CREATE TABLE IF NOT EXISTS above is a no-op
+  // for them - add the columns by hand. Each ALTER is wrapped individually
+  // since SQLite throws if the column is already there.
+  for (const ddl of [
+    'ALTER TABLE pantry_items ADD COLUMN removedAtTimestamp INTEGER',
+    'ALTER TABLE pantry_items ADD COLUMN removedReason TEXT',
+  ]) {
+    try {
+      await db.execAsync(ddl);
+    } catch {
+      // column already exists
+    }
+  }
 }
+
+/** How long a removed/used item stays restorable in History before being purged for good. */
+export const HISTORY_RETENTION_MS = DAY_MS;
 
 type PantryItemRow = {
   id: number;
@@ -34,6 +54,8 @@ type PantryItemRow = {
   dateAddedTimestamp: number;
   expiryTimestamp: number;
   isConsumed: number;
+  removedAtTimestamp: number | null;
+  removedReason: string | null;
 };
 
 function rowToPantryItem(row: PantryItemRow): PantryItem {
@@ -45,12 +67,14 @@ function rowToPantryItem(row: PantryItemRow): PantryItem {
     dateAddedTimestamp: row.dateAddedTimestamp,
     expiryTimestamp: row.expiryTimestamp,
     isConsumed: row.isConsumed !== 0,
+    removedAtTimestamp: row.removedAtTimestamp,
+    removedReason: row.removedReason as PantryItem['removedReason'],
   };
 }
 
 export async function getAllItems(db: SQLiteDatabase): Promise<PantryItem[]> {
   const rows = await db.getAllAsync<PantryItemRow>(
-    'SELECT * FROM pantry_items WHERE isConsumed = 0 ORDER BY expiryTimestamp ASC'
+    'SELECT * FROM pantry_items WHERE removedAtTimestamp IS NULL ORDER BY expiryTimestamp ASC'
   );
   return rows.map(rowToPantryItem);
 }
@@ -66,7 +90,7 @@ export async function getExpiringItems(
   // spoiled" list. Already-expired items still show up fine elsewhere, e.g.
   // the Pantry tab's own "Expired" label via PantryItemCard.
   const rows = await db.getAllAsync<PantryItemRow>(
-    'SELECT * FROM pantry_items WHERE isConsumed = 0 AND expiryTimestamp >= ? AND expiryTimestamp <= ? ORDER BY expiryTimestamp ASC',
+    'SELECT * FROM pantry_items WHERE removedAtTimestamp IS NULL AND expiryTimestamp >= ? AND expiryTimestamp <= ? ORDER BY expiryTimestamp ASC',
     [now, cutoff]
   );
   return rows.map(rowToPantryItem);
@@ -117,10 +141,47 @@ export async function getItemById(db: SQLiteDatabase, id: number): Promise<Pantr
 }
 
 export async function markConsumed(db: SQLiteDatabase, id: number) {
-  await db.runAsync('UPDATE pantry_items SET isConsumed = 1 WHERE id = ?', [id]);
+  await db.runAsync(
+    'UPDATE pantry_items SET isConsumed = 1, removedAtTimestamp = ?, removedReason = ? WHERE id = ?',
+    [Date.now(), 'used', id]
+  );
 }
 
-export async function deletePantryItem(db: SQLiteDatabase, id: number) {
+/** Soft-removes an item: it leaves the Pantry list but sits in History, restorable, for 24 hours. */
+export async function removeItem(db: SQLiteDatabase, id: number) {
+  await db.runAsync(
+    'UPDATE pantry_items SET removedAtTimestamp = ?, removedReason = ? WHERE id = ?',
+    [Date.now(), 'removed', id]
+  );
+}
+
+export async function restoreItem(db: SQLiteDatabase, id: number) {
+  await db.runAsync(
+    'UPDATE pantry_items SET removedAtTimestamp = NULL, removedReason = NULL, isConsumed = 0 WHERE id = ?',
+    [id]
+  );
+}
+
+export async function getHistoryItems(db: SQLiteDatabase): Promise<PantryItem[]> {
+  const cutoff = Date.now() - HISTORY_RETENTION_MS;
+  const rows = await db.getAllAsync<PantryItemRow>(
+    'SELECT * FROM pantry_items WHERE removedAtTimestamp IS NOT NULL AND removedAtTimestamp >= ? ORDER BY removedAtTimestamp DESC',
+    [cutoff]
+  );
+  return rows.map(rowToPantryItem);
+}
+
+/** Permanently deletes anything that's sat in History past the 24-hour restore window. */
+export async function purgeExpiredHistory(db: SQLiteDatabase) {
+  const cutoff = Date.now() - HISTORY_RETENTION_MS;
+  await db.runAsync(
+    'DELETE FROM pantry_items WHERE removedAtTimestamp IS NOT NULL AND removedAtTimestamp < ?',
+    [cutoff]
+  );
+}
+
+/** Deletes a History item right away instead of waiting out the 24-hour window. */
+export async function permanentlyDeleteItem(db: SQLiteDatabase, id: number) {
   await db.runAsync('DELETE FROM pantry_items WHERE id = ?', [id]);
 }
 
