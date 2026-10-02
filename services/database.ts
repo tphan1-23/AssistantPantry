@@ -59,10 +59,15 @@ export async function getExpiringItems(
   db: SQLiteDatabase,
   withinHours = 72
 ): Promise<PantryItem[]> {
-  const cutoff = Date.now() + withinHours * 60 * 60 * 1000;
+  const now = Date.now();
+  const cutoff = now + withinHours * 60 * 60 * 1000;
+  // Lower bound excludes items that have already expired - this is meant to
+  // be a "use it soon" list (e.g. recipe generation), not a "this is already
+  // spoiled" list. Already-expired items still show up fine elsewhere, e.g.
+  // the Pantry tab's own "Expired" label via PantryItemCard.
   const rows = await db.getAllAsync<PantryItemRow>(
-    'SELECT * FROM pantry_items WHERE isConsumed = 0 AND expiryTimestamp <= ? ORDER BY expiryTimestamp ASC',
-    [cutoff]
+    'SELECT * FROM pantry_items WHERE isConsumed = 0 AND expiryTimestamp >= ? AND expiryTimestamp <= ? ORDER BY expiryTimestamp ASC',
+    [now, cutoff]
   );
   return rows.map(rowToPantryItem);
 }
