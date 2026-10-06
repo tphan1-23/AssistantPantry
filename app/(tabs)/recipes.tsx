@@ -81,8 +81,12 @@ export default function RecipesScreen() {
     }
     setIsLoading(true);
     try {
-      const names = freshExpiring.map((item) => item.name);
-      const result = await generateZeroWasteRecipes(names);
+      const ingredients = freshExpiring.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+      }));
+      const result = await generateZeroWasteRecipes(ingredients);
       setRecipes(result);
       recipeBasisIdsRef.current = freshExpiring.map((item) => item.id);
     } catch (error) {

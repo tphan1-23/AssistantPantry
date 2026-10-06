@@ -62,10 +62,6 @@ export default function HistoryModal({ visible, items, now, onClose, onRestore, 
           );
         })
       )}
-
-      <Pressable style={styles.closeButton} onPress={onClose}>
-        <Text style={styles.closeText}>Close</Text>
-      </Pressable>
     </BottomSheetModal>
   );
 }
@@ -137,13 +133,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#c0392b',
-  },
-  closeButton: {
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  closeText: {
-    opacity: 0.6,
   },
 });
