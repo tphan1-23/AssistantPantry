@@ -1,5 +1,4 @@
 import { router } from "expo-router";
-import { useSQLiteContext } from "expo-sqlite";
 import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, TextInput } from "react-native";
 
@@ -12,8 +11,6 @@ import { insertItem } from "@/services/database";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export default function AddItemScreen() {
-  const db = useSQLiteContext();
-
   const [name, setName] = useState("");
   const [quantityText, setQuantityText] = useState("1");
   const [unit, setUnit] = useState("item");
@@ -32,7 +29,7 @@ export default function AddItemScreen() {
 
     setIsSaving(true);
     try {
-      await insertItem(db, {
+      await insertItem({
         name: trimmedName,
         quantity,
         unit: unit.trim() || "item",

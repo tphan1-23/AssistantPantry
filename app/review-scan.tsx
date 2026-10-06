@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { router } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 
 import { Text, View } from '@/components/Themed';
 import DateField from '@/components/DateField';
@@ -30,7 +29,6 @@ type Draft = {
 };
 
 export default function ReviewScanScreen() {
-  const db = useSQLiteContext();
   const [drafts, setDrafts] = useState<Draft[] | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -41,7 +39,7 @@ export default function ReviewScanScreen() {
       return;
     }
 
-    getAllItems(db).then((existingItems) => {
+    getAllItems().then((existingItems) => {
       const built: Draft[] = scanned.map((item, index) => {
         const match = findMatchingItem(existingItems, item.name);
         return {
@@ -58,7 +56,7 @@ export default function ReviewScanScreen() {
       });
       setDrafts(built);
     });
-  }, [db]);
+  }, []);
 
   function updateDraft(key: string, patch: Partial<Draft>) {
     setDrafts((prev) => prev?.map((d) => (d.key === key ? { ...d, ...patch } : d)) ?? prev);
@@ -75,9 +73,9 @@ export default function ReviewScanScreen() {
       for (const draft of drafts) {
         const quantity = Math.max(1, parseInt(draft.quantityText, 10) || 1);
         if (draft.mergeChoice === 'merge' && draft.matchedItem) {
-          await incrementQuantity(db, draft.matchedItem.id, quantity);
+          await incrementQuantity(draft.matchedItem.id, quantity);
         } else {
-          await insertItem(db, {
+          await insertItem({
             name: draft.name.trim() || 'Unnamed item',
             quantity,
             unit: draft.unit.trim() || 'item',

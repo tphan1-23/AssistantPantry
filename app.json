@@ -34,7 +34,6 @@
           "backgroundColor": "#FAF3EA"
         }
       ],
-      "expo-sqlite",
       [
         "expo-camera",
         {
@@ -44,10 +43,17 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "PantryAssistant uses your photos to scan receipts and fridge contents."
+          "photosPermission": "PantryAssistant uses your photos to scan receipts/fridge contents and to set your profile photo."
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "PantryAssistant uses Face ID to let you reveal your saved password."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

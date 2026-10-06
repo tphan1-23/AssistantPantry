@@ -1,61 +1,24 @@
-import type { SQLiteDatabase } from 'expo-sqlite';
-
 import type { FavoriteRecipe, PantryItem, Recipe, ScannedItem } from '@/types/pantry';
+import { supabase } from '@/services/supabase';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export async function migrateDatabase(db: SQLiteDatabase) {
-  await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS pantry_items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      quantity INTEGER NOT NULL DEFAULT 1,
-      unit TEXT NOT NULL DEFAULT 'item',
-      dateAddedTimestamp INTEGER NOT NULL,
-      expiryTimestamp INTEGER NOT NULL,
-      isConsumed INTEGER DEFAULT 0,
-      removedAtTimestamp INTEGER,
-      removedReason TEXT
-    );
-    CREATE TABLE IF NOT EXISTS favorite_recipes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      urgentIngredientsUsed TEXT NOT NULL,
-      additionalIngredients TEXT NOT NULL,
-      instructions TEXT NOT NULL,
-      createdAt INTEGER NOT NULL
-    );
-  `);
-
-  // Installs from before the history feature already have pantry_items
-  // without these columns, so CREATE TABLE IF NOT EXISTS above is a no-op
-  // for them - add the columns by hand. Each ALTER is wrapped individually
-  // since SQLite throws if the column is already there.
-  for (const ddl of [
-    'ALTER TABLE pantry_items ADD COLUMN removedAtTimestamp INTEGER',
-    'ALTER TABLE pantry_items ADD COLUMN removedReason TEXT',
-  ]) {
-    try {
-      await db.execAsync(ddl);
-    } catch {
-      // column already exists
-    }
-  }
-}
-
 /** How long a removed/used item stays restorable in History before being purged for good. */
 export const HISTORY_RETENTION_MS = DAY_MS;
+
+// Schema lives in Supabase (see supabase/schema.sql), scoped per-user via Row
+// Level Security - there's no local migration step to run here any more.
 
 type PantryItemRow = {
   id: number;
   name: string;
   quantity: number;
   unit: string;
-  dateAddedTimestamp: number;
-  expiryTimestamp: number;
-  isConsumed: number;
-  removedAtTimestamp: number | null;
-  removedReason: string | null;
+  date_added_timestamp: number;
+  expiry_timestamp: number;
+  is_consumed: boolean;
+  removed_at_timestamp: number | null;
+  removed_reason: string | null;
 };
 
 function rowToPantryItem(row: PantryItemRow): PantryItem {
@@ -64,36 +27,56 @@ function rowToPantryItem(row: PantryItemRow): PantryItem {
     name: row.name,
     quantity: row.quantity,
     unit: row.unit,
-    dateAddedTimestamp: row.dateAddedTimestamp,
-    expiryTimestamp: row.expiryTimestamp,
-    isConsumed: row.isConsumed !== 0,
-    removedAtTimestamp: row.removedAtTimestamp,
-    removedReason: row.removedReason as PantryItem['removedReason'],
+    dateAddedTimestamp: row.date_added_timestamp,
+    expiryTimestamp: row.expiry_timestamp,
+    isConsumed: row.is_consumed,
+    removedAtTimestamp: row.removed_at_timestamp,
+    removedReason: row.removed_reason as PantryItem['removedReason'],
   };
 }
 
-export async function getAllItems(db: SQLiteDatabase): Promise<PantryItem[]> {
-  const rows = await db.getAllAsync<PantryItemRow>(
-    'SELECT * FROM pantry_items WHERE removedAtTimestamp IS NULL ORDER BY expiryTimestamp ASC'
-  );
-  return rows.map(rowToPantryItem);
+type PostgrestLikeResult<T> = { data: T | null; error: { message: string } | null };
+
+function assertSuccess(result: PostgrestLikeResult<unknown>) {
+  if (result.error) throw new Error(result.error.message);
 }
 
-export async function getExpiringItems(
-  db: SQLiteDatabase,
-  withinHours = 72
-): Promise<PantryItem[]> {
+/** For queries that always return data on success (selects, insert().select()). */
+function unwrap<T>(result: PostgrestLikeResult<T>): T {
+  assertSuccess(result);
+  return result.data as T;
+}
+
+/** For queries where "no row" is a real, non-error outcome (maybeSingle()). */
+function unwrapNullable<T>(result: PostgrestLikeResult<T>): T | null {
+  assertSuccess(result);
+  return result.data;
+}
+
+export async function getAllItems(): Promise<PantryItem[]> {
+  const result = await supabase
+    .from('pantry_items')
+    .select('*')
+    .is('removed_at_timestamp', null)
+    .order('expiry_timestamp', { ascending: true });
+  return unwrap(result).map(rowToPantryItem);
+}
+
+export async function getExpiringItems(withinHours = 72): Promise<PantryItem[]> {
   const now = Date.now();
   const cutoff = now + withinHours * 60 * 60 * 1000;
   // Lower bound excludes items that have already expired - this is meant to
   // be a "use it soon" list (e.g. recipe generation), not a "this is already
   // spoiled" list. Already-expired items still show up fine elsewhere, e.g.
   // the Pantry tab's own "Expired" label via PantryItemCard.
-  const rows = await db.getAllAsync<PantryItemRow>(
-    'SELECT * FROM pantry_items WHERE removedAtTimestamp IS NULL AND expiryTimestamp >= ? AND expiryTimestamp <= ? ORDER BY expiryTimestamp ASC',
-    [now, cutoff]
-  );
-  return rows.map(rowToPantryItem);
+  const result = await supabase
+    .from('pantry_items')
+    .select('*')
+    .is('removed_at_timestamp', null)
+    .gte('expiry_timestamp', now)
+    .lte('expiry_timestamp', cutoff)
+    .order('expiry_timestamp', { ascending: true });
+  return unwrap(result).map(rowToPantryItem);
 }
 
 /** Computes an expiry timestamp for a scanned item: prefer a real printed date, else an estimate. */
@@ -106,83 +89,104 @@ export function expiryTimestampForScannedItem(item: ScannedItem, now = Date.now(
   return now + days * DAY_MS;
 }
 
-export async function insertItem(
-  db: SQLiteDatabase,
-  item: { name: string; quantity: number; unit: string; expiryTimestamp: number }
-): Promise<number> {
-  const now = Date.now();
-  const result = await db.runAsync(
-    'INSERT INTO pantry_items (name, quantity, unit, dateAddedTimestamp, expiryTimestamp, isConsumed) VALUES (?, ?, ?, ?, ?, 0)',
-    [item.name, item.quantity, item.unit, now, item.expiryTimestamp]
-  );
-  return result.lastInsertRowId;
+export async function insertItem(item: {
+  name: string;
+  quantity: number;
+  unit: string;
+  expiryTimestamp: number;
+}): Promise<number> {
+  const result = await supabase
+    .from('pantry_items')
+    .insert({
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      date_added_timestamp: Date.now(),
+      expiry_timestamp: item.expiryTimestamp,
+    })
+    .select('id')
+    .single();
+  return unwrap(result).id;
 }
 
-export async function incrementQuantity(db: SQLiteDatabase, id: number, amount: number) {
-  await db.runAsync('UPDATE pantry_items SET quantity = quantity + ? WHERE id = ?', [amount, id]);
+export async function incrementQuantity(id: number, amount: number) {
+  const result = await supabase.rpc('increment_item_quantity', { p_id: id, p_amount: amount });
+  assertSuccess(result);
 }
 
 export async function updateItem(
-  db: SQLiteDatabase,
   id: number,
   item: { name: string; quantity: number; unit: string; expiryTimestamp: number }
 ) {
-  await db.runAsync(
-    'UPDATE pantry_items SET name = ?, quantity = ?, unit = ?, expiryTimestamp = ? WHERE id = ?',
-    [item.name, item.quantity, item.unit, item.expiryTimestamp, id]
-  );
+  const result = await supabase
+    .from('pantry_items')
+    .update({
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      expiry_timestamp: item.expiryTimestamp,
+    })
+    .eq('id', id);
+  assertSuccess(result);
 }
 
-export async function getItemById(db: SQLiteDatabase, id: number): Promise<PantryItem | null> {
-  const row = await db.getFirstAsync<PantryItemRow>('SELECT * FROM pantry_items WHERE id = ?', [
-    id,
-  ]);
+export async function getItemById(id: number): Promise<PantryItem | null> {
+  const result = await supabase.from('pantry_items').select('*').eq('id', id).maybeSingle();
+  const row = unwrapNullable(result);
   return row ? rowToPantryItem(row) : null;
 }
 
-export async function markConsumed(db: SQLiteDatabase, id: number) {
-  await db.runAsync(
-    'UPDATE pantry_items SET isConsumed = 1, removedAtTimestamp = ?, removedReason = ? WHERE id = ?',
-    [Date.now(), 'used', id]
-  );
+export async function markConsumed(id: number) {
+  const result = await supabase
+    .from('pantry_items')
+    .update({ is_consumed: true, removed_at_timestamp: Date.now(), removed_reason: 'used' })
+    .eq('id', id);
+  assertSuccess(result);
 }
 
 /** Soft-removes an item: it leaves the Pantry list but sits in History, restorable, for 24 hours. */
-export async function removeItem(db: SQLiteDatabase, id: number) {
-  await db.runAsync(
-    'UPDATE pantry_items SET removedAtTimestamp = ?, removedReason = ? WHERE id = ?',
-    [Date.now(), 'removed', id]
-  );
+export async function removeItem(id: number) {
+  const result = await supabase
+    .from('pantry_items')
+    .update({ removed_at_timestamp: Date.now(), removed_reason: 'removed' })
+    .eq('id', id);
+  assertSuccess(result);
 }
 
-export async function restoreItem(db: SQLiteDatabase, id: number) {
-  await db.runAsync(
-    'UPDATE pantry_items SET removedAtTimestamp = NULL, removedReason = NULL, isConsumed = 0 WHERE id = ?',
-    [id]
-  );
+export async function restoreItem(id: number) {
+  const result = await supabase
+    .from('pantry_items')
+    .update({ removed_at_timestamp: null, removed_reason: null, is_consumed: false })
+    .eq('id', id);
+  assertSuccess(result);
 }
 
-export async function getHistoryItems(db: SQLiteDatabase): Promise<PantryItem[]> {
+export async function getHistoryItems(): Promise<PantryItem[]> {
   const cutoff = Date.now() - HISTORY_RETENTION_MS;
-  const rows = await db.getAllAsync<PantryItemRow>(
-    'SELECT * FROM pantry_items WHERE removedAtTimestamp IS NOT NULL AND removedAtTimestamp >= ? ORDER BY removedAtTimestamp DESC',
-    [cutoff]
-  );
-  return rows.map(rowToPantryItem);
+  const result = await supabase
+    .from('pantry_items')
+    .select('*')
+    .not('removed_at_timestamp', 'is', null)
+    .gte('removed_at_timestamp', cutoff)
+    .order('removed_at_timestamp', { ascending: false });
+  return unwrap(result).map(rowToPantryItem);
 }
 
 /** Permanently deletes anything that's sat in History past the 24-hour restore window. */
-export async function purgeExpiredHistory(db: SQLiteDatabase) {
+export async function purgeExpiredHistory() {
   const cutoff = Date.now() - HISTORY_RETENTION_MS;
-  await db.runAsync(
-    'DELETE FROM pantry_items WHERE removedAtTimestamp IS NOT NULL AND removedAtTimestamp < ?',
-    [cutoff]
-  );
+  const result = await supabase
+    .from('pantry_items')
+    .delete()
+    .not('removed_at_timestamp', 'is', null)
+    .lt('removed_at_timestamp', cutoff);
+  assertSuccess(result);
 }
 
 /** Deletes a History item right away instead of waiting out the 24-hour window. */
-export async function permanentlyDeleteItem(db: SQLiteDatabase, id: number) {
-  await db.runAsync('DELETE FROM pantry_items WHERE id = ?', [id]);
+export async function permanentlyDeleteItem(id: number) {
+  const result = await supabase.from('pantry_items').delete().eq('id', id);
+  assertSuccess(result);
 }
 
 function normalizeName(name: string): string {
@@ -228,43 +232,44 @@ export function findMatchingItem(items: PantryItem[], name: string): PantryItem 
 type FavoriteRecipeRow = {
   id: number;
   title: string;
-  urgentIngredientsUsed: string;
-  additionalIngredients: string;
-  instructions: string;
-  createdAt: number;
+  urgent_ingredients_used: string[];
+  additional_ingredients: string[];
+  instructions: string[];
 };
 
 function rowToFavoriteRecipe(row: FavoriteRecipeRow): FavoriteRecipe {
   return {
     id: row.id,
     title: row.title,
-    urgentIngredientsUsed: JSON.parse(row.urgentIngredientsUsed),
-    additionalIngredients: JSON.parse(row.additionalIngredients),
-    instructions: JSON.parse(row.instructions),
+    urgentIngredientsUsed: row.urgent_ingredients_used,
+    additionalIngredients: row.additional_ingredients,
+    instructions: row.instructions,
   };
 }
 
-export async function getFavoriteRecipes(db: SQLiteDatabase): Promise<FavoriteRecipe[]> {
-  const rows = await db.getAllAsync<FavoriteRecipeRow>(
-    'SELECT * FROM favorite_recipes ORDER BY createdAt DESC'
-  );
-  return rows.map(rowToFavoriteRecipe);
+export async function getFavoriteRecipes(): Promise<FavoriteRecipe[]> {
+  const result = await supabase
+    .from('favorite_recipes')
+    .select('*')
+    .order('created_at', { ascending: false });
+  return unwrap(result).map(rowToFavoriteRecipe);
 }
 
-export async function addFavoriteRecipe(db: SQLiteDatabase, recipe: Recipe): Promise<number> {
-  const result = await db.runAsync(
-    'INSERT INTO favorite_recipes (title, urgentIngredientsUsed, additionalIngredients, instructions, createdAt) VALUES (?, ?, ?, ?, ?)',
-    [
-      recipe.title,
-      JSON.stringify(recipe.urgentIngredientsUsed),
-      JSON.stringify(recipe.additionalIngredients),
-      JSON.stringify(recipe.instructions),
-      Date.now(),
-    ]
-  );
-  return result.lastInsertRowId;
+export async function addFavoriteRecipe(recipe: Recipe): Promise<number> {
+  const result = await supabase
+    .from('favorite_recipes')
+    .insert({
+      title: recipe.title,
+      urgent_ingredients_used: recipe.urgentIngredientsUsed,
+      additional_ingredients: recipe.additionalIngredients,
+      instructions: recipe.instructions,
+    })
+    .select('id')
+    .single();
+  return unwrap(result).id;
 }
 
-export async function removeFavoriteRecipe(db: SQLiteDatabase, id: number) {
-  await db.runAsync('DELETE FROM favorite_recipes WHERE id = ?', [id]);
+export async function removeFavoriteRecipe(id: number) {
+  const result = await supabase.from('favorite_recipes').delete().eq('id', id);
+  assertSuccess(result);
 }

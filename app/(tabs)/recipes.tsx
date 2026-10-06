@@ -1,5 +1,4 @@
 import { useFocusEffect } from "expo-router";
-import { useSQLiteContext } from "expo-sqlite";
 import { useCallback, useRef, useState } from "react";
 import { Alert, FlatList, StyleSheet } from "react-native";
 
@@ -18,7 +17,6 @@ import { generateZeroWasteRecipes } from "@/services/gemini";
 import type { FavoriteRecipe, PantryItem, Recipe } from "@/types/pantry";
 
 export default function RecipesScreen() {
-  const db = useSQLiteContext();
   const [expiringItems, setExpiringItems] = useState<PantryItem[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [favorites, setFavorites] = useState<FavoriteRecipe[]>([]);
@@ -37,9 +35,9 @@ export default function RecipesScreen() {
       let cancelled = false;
 
       Promise.all([
-        getAllItems(db),
-        getExpiringItems(db, 72),
-        getFavoriteRecipes(db),
+        getAllItems(),
+        getExpiringItems(72),
+        getFavoriteRecipes(),
       ]).then(([allItems, expiring, favoriteRecipes]) => {
         if (cancelled) return;
         setExpiringItems(expiring);
@@ -65,13 +63,13 @@ export default function RecipesScreen() {
       return () => {
         cancelled = true;
       };
-    }, [db]),
+    }, []),
   );
 
   async function handleGenerate() {
     // Re-read the pantry right before calling Gemini so generation always
     // reflects the current state, not a possibly-stale focus-effect snapshot.
-    const freshExpiring = await getExpiringItems(db, 72);
+    const freshExpiring = await getExpiringItems(72);
     setExpiringItems(freshExpiring);
 
     if (freshExpiring.length === 0) {
@@ -100,16 +98,16 @@ export default function RecipesScreen() {
   async function handleToggleFavorite(recipe: Recipe) {
     const existing = favorites.find((f) => f.title === recipe.title);
     if (existing) {
-      await removeFavoriteRecipe(db, existing.id);
+      await removeFavoriteRecipe(existing.id);
     } else {
-      await addFavoriteRecipe(db, recipe);
+      await addFavoriteRecipe(recipe);
     }
-    setFavorites(await getFavoriteRecipes(db));
+    setFavorites(await getFavoriteRecipes());
   }
 
   async function handleUnfavorite(id: number) {
-    await removeFavoriteRecipe(db, id);
-    setFavorites(await getFavoriteRecipes(db));
+    await removeFavoriteRecipe(id);
+    setFavorites(await getFavoriteRecipes());
   }
 
   return (

@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
+import BottomSheetModal from '@/components/BottomSheetModal';
 import { Text, View } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { HISTORY_RETENTION_MS } from '@/services/database';
@@ -11,94 +11,66 @@ const HOUR_MS = 60 * 60 * 1000;
 type Props = {
   visible: boolean;
   items: PantryItem[];
+  /**
+   * Timestamp captured by the caller at the moment it opened the sheet
+   * (an ordinary event handler, not render/effect code - see
+   * Decisions & Bug Fixes Log for why `now` isn't computed in here).
+   */
+  now: number;
   onClose: () => void;
   onRestore: (id: number) => void;
   onDeleteNow: (id: number) => void;
 };
 
-export default function HistoryModal({ visible, items, onClose, onRestore, onDeleteNow }: Props) {
-  // Lazy initializer per the app's react-hooks/purity convention (see
-  // PantryItemCard) - reads Date.now() once, not on every render.
-  const [now] = useState(() => Date.now());
-
+export default function HistoryModal({ visible, items, now, onClose, onRestore, onDeleteNow }: Props) {
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet}>
-          <View style={styles.dragHandleRow}>
-            <View style={styles.dragHandle} />
-          </View>
-          <ScrollView contentContainerStyle={styles.scrollContent}>
-            <Text style={styles.heading}>History</Text>
-            <Text style={styles.subheading}>
-              Used or removed items stay here for 24 hours in case you want them back.
-            </Text>
+    <BottomSheetModal visible={visible} onClose={onClose} contentContainerStyle={styles.scrollContent}>
+      <Text style={styles.heading}>History</Text>
+      <Text style={styles.subheading}>
+        Used or removed items stay here for 24 hours in case you want them back.
+      </Text>
 
-            {items.length === 0 ? (
-              <Text style={styles.empty}>Nothing in history right now.</Text>
-            ) : (
-              items.map((item) => {
-                const removedAt = item.removedAtTimestamp ?? now;
-                const msLeft = removedAt + HISTORY_RETENTION_MS - now;
-                const hoursLeft = Math.max(1, Math.ceil(msLeft / HOUR_MS));
-                const reasonLabel = item.removedReason === 'used' ? 'Marked as used' : 'Removed';
+      {items.length === 0 ? (
+        <Text style={styles.empty}>Nothing in history right now.</Text>
+      ) : (
+        items.map((item) => {
+          const removedAt = item.removedAtTimestamp ?? now;
+          const msLeft = removedAt + HISTORY_RETENTION_MS - now;
+          const hoursLeft = Math.min(24, Math.max(1, Math.ceil(msLeft / HOUR_MS)));
+          // Deliberately just the item's name, nothing else (no quantity/unit)
+          // - this is a log of *what* left the pantry, not a restatement of
+          // how much of it there was.
+          const reasonLabel = item.removedReason === 'used' ? 'Marked as used' : 'Removed';
 
-                return (
-                  <View key={item.id} style={styles.row}>
-                    <View style={styles.rowInfo}>
-                      <Text style={styles.name}>{item.name}</Text>
-                      <Text style={styles.meta}>
-                        {reasonLabel} · deletes in {hoursLeft}h
-                      </Text>
-                    </View>
-                    <View style={styles.rowActions}>
-                      <Pressable
-                        style={styles.restoreButton}
-                        onPress={() => onRestore(item.id)}>
-                        <Text style={styles.restoreText}>Restore</Text>
-                      </Pressable>
-                      <Pressable
-                        style={styles.deleteButton}
-                        onPress={() => onDeleteNow(item.id)}>
-                        <Text style={styles.deleteText}>Delete</Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                );
-              })
-            )}
+          return (
+            <View key={item.id} style={styles.row}>
+              <View style={styles.rowInfo}>
+                <Text style={styles.name}>{item.name}</Text>
+                <Text style={styles.meta}>
+                  {reasonLabel} · deletes in {hoursLeft}h
+                </Text>
+              </View>
+              <View style={styles.rowActions}>
+                <Pressable style={styles.restoreButton} onPress={() => onRestore(item.id)}>
+                  <Text style={styles.restoreText}>Restore</Text>
+                </Pressable>
+                <Pressable style={styles.deleteButton} onPress={() => onDeleteNow(item.id)}>
+                  <Text style={styles.deleteText}>Delete</Text>
+                </Pressable>
+              </View>
+            </View>
+          );
+        })
+      )}
 
-            <Pressable style={styles.closeButton} onPress={onClose}>
-              <Text style={styles.closeText}>Close</Text>
-            </Pressable>
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
+      <Pressable style={styles.closeButton} onPress={onClose}>
+        <Text style={styles.closeText}>Close</Text>
+      </Pressable>
+    </BottomSheetModal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: '#00000066',
-  },
-  sheet: {
-    maxHeight: '85%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  dragHandleRow: {
-    alignItems: 'center',
-    paddingTop: 10,
-  },
-  dragHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.light.cardBorder,
-  },
   scrollContent: {
     padding: 20,
     gap: 12,
