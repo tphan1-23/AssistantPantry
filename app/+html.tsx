@@ -5,6 +5,15 @@ import type { ReactNode } from 'react';
 // web page during static rendering.
 // The contents of this function only run in Node.js environments and
 // do not have access to the DOM or browser APIs.
+//
+// NOTE: currently NOT consulted at all. app.json's web.output is "single"
+// (required - "static"/"server" mode crashes during server-side prerender,
+// since the Supabase client touches browser-only storage at module load
+// time), and Expo's CLI only uses this file for "static"/"server" output;
+// "single" mode uses its own fixed internal template instead. Custom
+// <head> tags (PWA manifest link, apple-mobile-web-app-* meta tags) live
+// in scripts/patch-web-manifest.js instead, post-processing dist/index.html
+// after export - see that file for why.
 export default function Root({ children }: { children: ReactNode }) {
   return (
     <html lang="en">

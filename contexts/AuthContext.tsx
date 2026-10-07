@@ -1,5 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Platform } from 'react-native';
 
 import { cachePassword, clearCachedPassword } from '@/services/credentialCache';
 import { supabase } from '@/services/supabase';
@@ -21,9 +22,19 @@ type AuthContextValue = {
   exchangeRecoveryCode: (code: string) => Promise<void>;
 };
 
-// Where Supabase's password-recovery email links back into the app -
-// matches app.json's "scheme" and the app/reset-password.tsx route.
-const RESET_REDIRECT_URL = 'pantryassistant://reset-password';
+// Where Supabase's password-recovery email links back into the app. A
+// browser can't open a custom URL scheme (pantryassistant://) at all, so
+// on web this has to be a real https:// URL back to the same site instead
+// - window.location.origin is safe to read here since web.output is
+// "single" (no server-side rendering - see services/supabase.ts), so this
+// module only ever runs in an actual browser on web, never in Node.
+function getResetRedirectUrl(): string {
+  if (Platform.OS === 'web') {
+    return `${window.location.origin}/reset-password`;
+  }
+  // Matches app.json's "scheme" and the app/reset-password.tsx route.
+  return 'pantryassistant://reset-password';
+}
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -89,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function requestPasswordReset(email: string) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: RESET_REDIRECT_URL,
+      redirectTo: getResetRedirectUrl(),
     });
     if (error) throw error;
   }

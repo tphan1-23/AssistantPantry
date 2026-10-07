@@ -23,8 +23,13 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "output": "single",
+      "favicon": "./assets/images/favicon.png",
+      "name": "PantryAssistant",
+      "shortName": "Pantry",
+      "backgroundColor": "#FAF3EA",
+      "themeColor": "#8B5E3C",
+      "display": "standalone"
     },
     "plugins": [
       "expo-router",
