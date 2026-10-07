@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
 import DateField from '@/components/DateField';
 import GradientButton from '@/components/GradientButton';
 import Colors from '@/constants/Colors';
 import type { PantryItem } from '@/types/pantry';
+import { alert } from '@/utils/alert';
 
 type Props = {
   item: PantryItem | null;
@@ -53,7 +54,7 @@ function EditItemForm({
   async function handleSave() {
     const trimmedName = name.trim();
     if (!trimmedName) {
-      Alert.alert('Name required', 'Give this item a name before saving.');
+      alert('Name required', 'Give this item a name before saving.');
       return;
     }
     const quantity = Math.max(1, parseInt(quantityText, 10) || 1);
@@ -72,7 +73,7 @@ function EditItemForm({
   }
 
   function handleDelete() {
-    Alert.alert('Remove item?', `Remove ${item.name} from your pantry?`, [
+    alert('Remove item?', `Remove ${item.name} from your pantry?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => onDelete(item.id) },
     ]);

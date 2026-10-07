@@ -1,11 +1,12 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, TextInput } from 'react-native';
+import { Pressable, StyleSheet, TextInput } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
 import GradientButton from '@/components/GradientButton';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
+import { alert } from '@/utils/alert';
 
 // After this many consecutive wrong-password attempts (not other errors
 // like a network failure), suggest resetting the password instead of just
@@ -21,7 +22,7 @@ export default function LoginScreen() {
 
   async function handleSignIn() {
     if (!email.trim() || !password) {
-      Alert.alert('Missing info', 'Enter your email and password.');
+      alert('Missing info', 'Enter your email and password.');
       return;
     }
     setIsSubmitting(true);
@@ -36,12 +37,12 @@ export default function LoginScreen() {
       setFailedAttempts(nextFailedAttempts);
 
       if (isWrongCredentials && nextFailedAttempts >= SUGGEST_RESET_AFTER_ATTEMPTS) {
-        Alert.alert('Still not working?', "That's the wrong password a couple of times now - want to reset it?", [
+        alert('Still not working?', "That's the wrong password a couple of times now - want to reset it?", [
           { text: 'Try again', style: 'cancel' },
           { text: 'Reset Password', onPress: handleForgotPassword },
         ]);
       } else {
-        Alert.alert('Could not sign in', message);
+        alert('Could not sign in', message);
       }
     } finally {
       setIsSubmitting(false);
@@ -51,15 +52,15 @@ export default function LoginScreen() {
   async function handleForgotPassword() {
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
-      Alert.alert('Email needed', 'Enter your email above first, then tap "Forgot password?" again.');
+      alert('Email needed', 'Enter your email above first, then tap "Forgot password?" again.');
       return;
     }
     try {
       await requestPasswordReset(trimmedEmail);
       setFailedAttempts(0);
-      Alert.alert('Check your email', `We sent a password reset link to ${trimmedEmail}.`);
+      alert('Check your email', `We sent a password reset link to ${trimmedEmail}.`);
     } catch (error) {
-      Alert.alert('Could not send reset email', error instanceof Error ? error.message : 'Unknown error');
+      alert('Could not send reset email', error instanceof Error ? error.message : 'Unknown error');
     }
   }
 

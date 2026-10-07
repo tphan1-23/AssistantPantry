@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, TextInput } from 'react-native';
+import { Pressable, StyleSheet, TextInput } from 'react-native';
 
 import Avatar from '@/components/Avatar';
 import BottomSheetModal from '@/components/BottomSheetModal';
@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { confirmWithBiometrics } from '@/services/biometrics';
 import { getCachedPassword } from '@/services/credentialCache';
 import { uploadAvatar } from '@/services/profile';
+import { alert } from '@/utils/alert';
 
 type Props = {
   visible: boolean;
@@ -54,7 +55,7 @@ export default function ProfileModal({ visible, onClose }: Props) {
       const url = await uploadAvatar(currentUser.id, result.assets[0].base64);
       await updateProfile({ avatarUrl: url });
     } catch (error) {
-      Alert.alert('Could not update photo', error instanceof Error ? error.message : 'Unknown error');
+      alert('Could not update photo', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -63,14 +64,14 @@ export default function ProfileModal({ visible, onClose }: Props) {
   async function handleSaveUsername() {
     const trimmed = username.trim();
     if (!trimmed) {
-      Alert.alert('Username required', 'Enter a username before saving.');
+      alert('Username required', 'Enter a username before saving.');
       return;
     }
     setIsSavingUsername(true);
     try {
       await updateProfile({ username: trimmed });
     } catch (error) {
-      Alert.alert('Could not save username', error instanceof Error ? error.message : 'Unknown error');
+      alert('Could not save username', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setIsSavingUsername(false);
     }
@@ -87,12 +88,12 @@ export default function ProfileModal({ visible, onClose }: Props) {
     try {
       const check = await confirmWithBiometrics('Confirm to view your password');
       if (!check.ok) {
-        Alert.alert('Could not verify', BIOMETRIC_FAILURE_MESSAGES[check.reason]);
+        alert('Could not verify', BIOMETRIC_FAILURE_MESSAGES[check.reason]);
         return;
       }
       const cached = await getCachedPassword(currentUser.email);
       if (!cached) {
-        Alert.alert(
+        alert(
           'Not saved on this device',
           "Your password isn't cached here yet - sign out and sign back in (or set a new one) to save it for Face ID reveal."
         );
@@ -105,7 +106,7 @@ export default function ProfileModal({ visible, onClose }: Props) {
   }
 
   function handleSignOut() {
-    Alert.alert('Sign out?', undefined, [
+    alert('Sign out?', undefined, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',

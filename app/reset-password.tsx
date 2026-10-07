@@ -1,11 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, TextInput } from 'react-native';
+import { ActivityIndicator, StyleSheet, TextInput } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
 import GradientButton from '@/components/GradientButton';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
+import { alert } from '@/utils/alert';
 
 // Reached only via the deep link in Supabase's password-recovery email
 // (pantryassistant://reset-password?code=...&type=recovery) - never
@@ -59,21 +60,21 @@ export default function ResetPasswordScreen() {
 
   async function handleSetPassword() {
     if (newPassword.length < 6) {
-      Alert.alert('Password too short', 'Use at least 6 characters.');
+      alert('Password too short', 'Use at least 6 characters.');
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert("Passwords don't match", 'Double check both fields.');
+      alert("Passwords don't match", 'Double check both fields.');
       return;
     }
     setIsSubmitting(true);
     try {
       await updatePassword(newPassword);
-      Alert.alert('Password updated', undefined, [
+      alert('Password updated', undefined, [
         { text: 'OK', onPress: () => router.replace('/') },
       ]);
     } catch (error) {
-      Alert.alert('Could not update password', error instanceof Error ? error.message : 'Unknown error');
+      alert('Could not update password', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setIsSubmitting(false);
     }

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
@@ -8,6 +8,7 @@ import GradientButton from '@/components/GradientButton';
 import { Text, View } from '@/components/Themed';
 import { scanImageForItems } from '@/services/gemini';
 import { setPendingScan } from '@/services/scanSession';
+import { alert } from '@/utils/alert';
 
 type CapturedPhoto = { uri: string; base64: string };
 
@@ -21,7 +22,7 @@ export default function ScanScreen() {
     if (!cameraRef.current) return;
     const result = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.5 });
     if (!result?.base64) {
-      Alert.alert('Capture failed', 'Could not read image data from the camera.');
+      alert('Capture failed', 'Could not read image data from the camera.');
       return;
     }
     setPhoto({ uri: result.uri, base64: result.base64 });
@@ -43,7 +44,7 @@ export default function ScanScreen() {
     try {
       const items = await scanImageForItems(photo.base64);
       if (items.length === 0) {
-        Alert.alert('No items found', 'Gemini could not identify any food items in that image.');
+        alert('No items found', 'Gemini could not identify any food items in that image.');
         setPhoto(null);
         return;
       }
@@ -51,7 +52,7 @@ export default function ScanScreen() {
       router.push('/review-scan');
       setPhoto(null);
     } catch (error) {
-      Alert.alert('Scan failed', error instanceof Error ? error.message : 'Unknown error');
+      alert('Scan failed', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setIsProcessing(false);
     }

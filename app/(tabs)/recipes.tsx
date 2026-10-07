@@ -1,6 +1,6 @@
 import { useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { Alert, FlatList, StyleSheet } from "react-native";
+import { FlatList, StyleSheet } from "react-native";
 
 import FavoritesPanel from "@/components/FavoritesPanel";
 import GradientButton from "@/components/GradientButton";
@@ -15,6 +15,7 @@ import {
 } from "@/services/database";
 import { generateZeroWasteRecipes } from "@/services/gemini";
 import type { FavoriteRecipe, PantryItem, Recipe } from "@/types/pantry";
+import { alert } from "@/utils/alert";
 
 export default function RecipesScreen() {
   const [expiringItems, setExpiringItems] = useState<PantryItem[]>([]);
@@ -73,7 +74,7 @@ export default function RecipesScreen() {
     setExpiringItems(freshExpiring);
 
     if (freshExpiring.length === 0) {
-      Alert.alert(
+      alert(
         "Nothing expiring soon",
         "No items are within 72 hours of their estimated expiry.",
       );
@@ -90,7 +91,7 @@ export default function RecipesScreen() {
       setRecipes(result);
       recipeBasisIdsRef.current = freshExpiring.map((item) => item.id);
     } catch (error) {
-      Alert.alert(
+      alert(
         "Could not generate recipes",
         error instanceof Error ? error.message : "Unknown error",
       );

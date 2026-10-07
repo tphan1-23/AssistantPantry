@@ -1,12 +1,13 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, TextInput } from "react-native";
+import { ScrollView, StyleSheet, TextInput } from "react-native";
 
 import DateField from "@/components/DateField";
 import GradientButton from "@/components/GradientButton";
 import { Text, View } from "@/components/Themed";
 import Colors from "@/constants/Colors";
 import { insertItem } from "@/services/database";
+import { alert } from "@/utils/alert";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -22,7 +23,7 @@ export default function AddItemScreen() {
   async function handleSave() {
     const trimmedName = name.trim();
     if (!trimmedName) {
-      Alert.alert("Name required", "Give this item a name before saving.");
+      alert("Name required", "Give this item a name before saving.");
       return;
     }
     const quantity = Math.max(1, parseInt(quantityText, 10) || 1);
@@ -41,7 +42,7 @@ export default function AddItemScreen() {
       setExpiryDate(new Date(Date.now() + 7 * DAY_MS));
       router.navigate("/");
     } catch (error) {
-      Alert.alert(
+      alert(
         "Could not save",
         error instanceof Error ? error.message : "Unknown error",
       );

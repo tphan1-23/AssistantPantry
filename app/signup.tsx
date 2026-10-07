@@ -1,11 +1,12 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, TextInput } from 'react-native';
+import { StyleSheet, TextInput } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
 import GradientButton from '@/components/GradientButton';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
+import { alert } from '@/utils/alert';
 
 export default function SignupScreen() {
   const { signUp } = useAuth();
@@ -17,27 +18,27 @@ export default function SignupScreen() {
 
   async function handleSignUp() {
     if (!username.trim() || !email.trim() || !password) {
-      Alert.alert('Missing info', 'Enter a username, email, and password.');
+      alert('Missing info', 'Enter a username, email, and password.');
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Password too short', 'Use at least 6 characters.');
+      alert('Password too short', 'Use at least 6 characters.');
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert("Passwords don't match", 'Double check both password fields.');
+      alert("Passwords don't match", 'Double check both password fields.');
       return;
     }
     setIsSubmitting(true);
     try {
       await signUp(email.trim(), password, username.trim());
-      Alert.alert(
+      alert(
         'Check your email',
         'We sent a confirmation link. Confirm your email, then sign in.',
         [{ text: 'OK', onPress: () => router.replace('/login') }]
       );
     } catch (error) {
-      Alert.alert('Could not sign up', error instanceof Error ? error.message : 'Unknown error');
+      alert('Could not sign up', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setIsSubmitting(false);
     }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { router } from 'expo-router';
 
 import { Text, View } from '@/components/Themed';
@@ -15,6 +15,7 @@ import {
 } from '@/services/database';
 import { takePendingScan } from '@/services/scanSession';
 import type { PantryItem, ScannedItem } from '@/types/pantry';
+import { alert } from '@/utils/alert';
 
 type Draft = {
   key: string;
@@ -83,9 +84,9 @@ export default function ReviewScanScreen() {
           });
         }
       }
-      Alert.alert('Added to pantry', undefined, [{ text: 'OK', onPress: () => router.back() }]);
+      alert('Added to pantry', undefined, [{ text: 'OK', onPress: () => router.back() }]);
     } catch (error) {
-      Alert.alert('Could not save items', error instanceof Error ? error.message : 'Unknown error');
+      alert('Could not save items', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setIsSaving(false);
     }
